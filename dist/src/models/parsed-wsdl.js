@@ -21,6 +21,8 @@ var defaultOptions = {
     caseInsensitiveNames: false,
     maxStack: 64,
     maxStackWarn: 32,
+    modelNamePreffix: "",
+    modelNameSuffix: "",
 };
 var ParsedWsdl = /** @class */ (function () {
     function ParsedWsdl(options) {
@@ -42,7 +44,10 @@ var ParsedWsdl = /** @class */ (function () {
     ParsedWsdl.prototype.findNonCollisionDefinitionName = function (defName) {
         var definitionName = (0, sanitize_filename_1.default)(defName);
         var isInSensitive = this._options.caseInsensitiveNames;
-        var defNameToCheck = isInSensitive ? definitionName.toLowerCase() : definitionName;
+        var defNameToCheck = "".concat(this._options.modelNamePreffix).concat(definitionName).concat(this._options.modelNameSuffix);
+        if (isInSensitive) {
+            defNameToCheck = defNameToCheck.toLowerCase();
+        }
         if (!this.definitions.find(function (def) {
             return isInSensitive ? def.name.toLowerCase() === defNameToCheck : def.name === defNameToCheck;
         })) {

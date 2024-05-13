@@ -70,6 +70,8 @@ export interface Options {
      * @default 32
      */
     maxStackWarn: number;
+    modelNamePreffix: string;
+    modelNameSuffix: string;
 }
 export declare class ParsedWsdl {
     /**

@@ -265,6 +265,7 @@ function generate(parsedWsdl, outDir, options) {
                     namedImports: [
                         { name: "Client", alias: "SoapClient" },
                         { name: "createClientAsync", alias: "soapCreateClientAsync" },
+                        { name: "IExOptions", alias: "ISoapExOptions" },
                     ],
                 });
                 clientFile.addImportDeclarations(clientImports);
@@ -283,6 +284,11 @@ function generate(parsedWsdl, outDir, options) {
                                 {
                                     name: (0, camelcase_1.default)(method.paramName),
                                     type: method.paramDefinition ? method.paramDefinition.name : "{}",
+                                },
+                                {
+                                    name: "options",
+                                    type: "ISoapExOptions",
+                                    hasQuestionToken: true,
                                 },
                             ],
                             returnType: "Promise<[result: ".concat(method.returnDefinition ? method.returnDefinition.name : "unknown", ", rawResponse: any, soapHeader: any, rawRequest: any]>"),
