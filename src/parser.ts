@@ -89,15 +89,28 @@ function parseDefinition(
                     const stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: stripedPropName,
-                            sourceName: propName,
-                            description: type,
-                            type: "string",
-                            isArray: true,
-                        });
+                        const enumResult = /string\|(.+)/.exec(type);
+                        if (enumResult) {
+                            // enum
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: propName,
+                                sourceName: propName,
+                                description: type,
+                                type: `"${enumResult[1].split(",").join('" | "')}"`,
+                                isArray: true,
+                            });
+                        } else {
+                            // primitive type
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: propName,
+                                sourceName: propName,
+                                description: type,
+                                type: "string",
+                                isArray: true,
+                            });
+                        }
                     } else if (type instanceof ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
                         definition.properties.push({
@@ -158,6 +171,7 @@ function parseDefinition(
                                 sourceName: propName,
                                 description: type,
                                 type: `"${enumResult[1].split(",").join('" | "')}"`,
+                                isArray: false,
                             });
                         } else {
                             // primitive type

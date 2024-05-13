@@ -149,15 +149,29 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     var stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: stripedPropName,
-                            sourceName: propName,
-                            description: type,
-                            type: "string",
-                            isArray: true,
-                        });
+                        var enumResult = /string\|(.+)/.exec(type);
+                        if (enumResult) {
+                            // enum
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: propName,
+                                sourceName: propName,
+                                description: type,
+                                type: "\"".concat(enumResult[1].split(",").join('" | "'), "\""),
+                                isArray: true,
+                            });
+                        }
+                        else {
+                            // primitive type
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: propName,
+                                sourceName: propName,
+                                description: type,
+                                type: "string",
+                                isArray: true,
+                            });
+                        }
                     }
                     else if (type instanceof elements_1.ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
@@ -214,6 +228,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                                 sourceName: propName,
                                 description: type,
                                 type: "\"".concat(enumResult[1].split(",").join('" | "'), "\""),
+                                isArray: false,
                             });
                         }
                         else {
