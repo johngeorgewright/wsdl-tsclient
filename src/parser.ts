@@ -94,7 +94,7 @@ function parseDefinition(
                             // enum
                             definition.properties.push({
                                 kind: "PRIMITIVE",
-                                name: propName,
+                                name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
                                 type: `"${enumResult[1].split(",").join('" | "')}"`,
@@ -104,7 +104,7 @@ function parseDefinition(
                             // primitive type
                             definition.properties.push({
                                 kind: "PRIMITIVE",
-                                name: propName,
+                                name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
                                 type: "string",

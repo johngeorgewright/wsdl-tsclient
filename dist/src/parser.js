@@ -154,7 +154,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                             // enum
                             definition.properties.push({
                                 kind: "PRIMITIVE",
-                                name: propName,
+                                name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
                                 type: "\"".concat(enumResult[1].split(",").join('" | "'), "\""),
@@ -165,7 +165,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                             // primitive type
                             definition.properties.push({
                                 kind: "PRIMITIVE",
-                                name: propName,
+                                name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
                                 type: "string",
