@@ -138,6 +138,17 @@ function generateDefinitionFile(project, definition, defDir, stack, generated, o
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
         }
     }
+    defFile.addEnums(Object.entries(definition.enums).map(function (_a) {
+        var name = _a[0], values = _a[1];
+        return ({
+            name: name,
+            isExported: true,
+            members: values.map(function (value) { return ({
+                name: value,
+                value: value,
+            }); }),
+        });
+    }));
     defFile.addImportDeclarations(definitionImports);
     defFile.addStatements([
         {

@@ -111,6 +111,17 @@ function generateDefinitionFile(
         }
     }
 
+    defFile.addEnums(
+        Object.entries(definition.enums).map(([name, values]) => ({
+            name,
+            isExported: true,
+            members: values.map((value) => ({
+                name: value,
+                value,
+            })),
+        }))
+    );
+
     defFile.addImportDeclarations(definitionImports);
     defFile.addStatements([
         {

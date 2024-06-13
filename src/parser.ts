@@ -88,6 +88,7 @@ function parseDefinition(
         docs: [name],
         properties: [],
         description: "",
+        enums: {},
     };
 
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
@@ -115,14 +116,16 @@ function parseDefinition(
                         const enumResult = /string\|(.+)/.exec(type);
                         if (enumResult) {
                             // enum
+                            const enumName = changeCase(stripedPropName, { pascalCase: true });
                             definition.properties.push({
                                 kind: "PRIMITIVE",
                                 name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
-                                type: `"${enumResult[1].split(",").join('" | "')}"`,
+                                type: `${enumName} | keyof typeof ${enumName}`,
                                 isArray: true,
                             });
+                            definition.enums[enumName] = enumResult[1].split(",");
                         } else {
                             // primitive type
                             definition.properties.push({
@@ -186,14 +189,16 @@ function parseDefinition(
                     const enumResult = /string\|(.+)/.exec(type);
                     if (enumResult) {
                         // enum
+                        const enumName = changeCase(propName, { pascalCase: true });
                         definition.properties.push({
                             kind: "PRIMITIVE",
                             name: propName,
                             sourceName: propName,
                             description: type,
-                            type: `"${enumResult[1].split(",").join('" | "')}"`,
+                            type: `${enumName} | keyof typeof ${enumName}`,
                             isArray: false,
                         });
+                        definition.enums[enumName] = enumResult[1].split(",");
                     } else {
                         // primitive type
                         definition.properties.push({

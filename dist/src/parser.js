@@ -142,6 +142,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
         docs: [name],
         properties: [],
         description: "",
+        enums: {},
     };
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
     visitedDefs.push({ name: definition.name, parts: defParts, definition: definition }); // NOTE: cache reference to this defintion globally (for avoiding circular references)
@@ -172,14 +173,16 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                         var enumResult = /string\|(.+)/.exec(type);
                         if (enumResult) {
                             // enum
+                            var enumName = (0, change_case_1.changeCase)(stripedPropName, { pascalCase: true });
                             definition.properties.push({
                                 kind: "PRIMITIVE",
                                 name: stripedPropName,
                                 sourceName: propName,
                                 description: type,
-                                type: "\"".concat(enumResult[1].split(",").join('" | "'), "\""),
+                                type: "".concat(enumName, " | keyof typeof ").concat(enumName),
                                 isArray: true,
                             });
+                            definition.enums[enumName] = enumResult[1].split(",");
                         }
                         else {
                             // primitive type
@@ -240,14 +243,16 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     var enumResult = /string\|(.+)/.exec(type);
                     if (enumResult) {
                         // enum
+                        var enumName = (0, change_case_1.changeCase)(propName, { pascalCase: true });
                         definition.properties.push({
                             kind: "PRIMITIVE",
                             name: propName,
                             sourceName: propName,
                             description: type,
-                            type: "\"".concat(enumResult[1].split(",").join('" | "'), "\""),
+                            type: "".concat(enumName, " | keyof typeof ").concat(enumName),
                             isArray: false,
                         });
+                        definition.enums[enumName] = enumResult[1].split(",");
                     }
                     else {
                         // primitive type
