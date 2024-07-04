@@ -328,7 +328,9 @@ function generate(parsedWsdl, outDir, options) {
                 overwrite: true,
             });
             indexFile.addExportDeclarations(allDefinitions.map(function (def) { return ({
-                namedExports: [def.name],
+                namedExports: __spreadArray([
+                    def.name
+                ], Object.keys(def.enums).map(function (enumName) { return ({ name: enumName, alias: def.name + enumName }); }), true),
                 moduleSpecifier: "./definitions/".concat(def.name),
             }); }));
             if (!mergedOptions.emitDefinitionsOnly) {

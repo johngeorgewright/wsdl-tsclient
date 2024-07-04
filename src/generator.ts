@@ -349,7 +349,10 @@ export async function generate(
 
     indexFile.addExportDeclarations(
         allDefinitions.map((def) => ({
-            namedExports: [def.name],
+            namedExports: [
+                def.name,
+                ...Object.keys(def.enums).map((enumName) => ({ name: enumName, alias: def.name + enumName })),
+            ],
             moduleSpecifier: `./definitions/${def.name}`,
         }))
     );
