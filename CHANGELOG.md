@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2024-07-15
+
+- [feat(cli): add option for modelPropertyNaming](https://github.com/dderevjanik/wsdl-tsclient/commit/8670d29a8f98815a74d442595b7d7d3ebdb5388c) `--modelPropertyNaming=` 
+
+## [1.6.0] - 2024-07-02
+
+- Fix for code generation types not matching what node-soap produces by @nahidakbar in https://github.com/dderevjanik/wsdl-tsclient/pull/54
+- fix for insensitive names and use of prefix and suffix by @vekexasia in https://github.com/dderevjanik/wsdl-tsclient/pull/46
+- Reduce constraints on "soap" version by @mike-marcacci in https://github.com/dderevjanik/wsdl-tsclient/pull/77
+- Fix products test by @icholy in https://github.com/dderevjanik/wsdl-tsclient/pull/65
+- Handle namespaced primitive types by @icholy in https://github.com/dderevjanik/wsdl-tsclient/pull/79
+- ESlint fixes plus other minor improvements by @svandriel in https://github.com/dderevjanik/wsdl-tsclient/pull/82
+- Fixed: Output message without nested element defaulted to request type by @svandriel in https://github.com/dderevjanik/wsdl-tsclient/pull/83
+- Bugfix: move development-only dependencies to devDependencies by @svandriel in https://github.com/dderevjanik/wsdl-tsclient/pull/85
+- Make tsc invocation (during tests) work on windows as well by @svandriel in https://github.com/dderevjanik/wsdl-tsclient/pull/88
+
 ## [1.5.0] - 2024-04-16
 
 - Project: Update soap dependency to 1.0.0 [#73](https://github.com/dderevjanik/wsdl-tsclient/pull/73) by @taylorreece

@@ -15,11 +15,13 @@ import { Logger } from "./utils/logger";
 export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;
     modelPropertyNaming: ModelPropertyNaming;
+    esm: boolean;
 }
 
 const defaultOptions: GeneratorOptions = {
     emitDefinitionsOnly: false,
     modelPropertyNaming: null,
+    esm: false,
 };
 
 /**
@@ -105,7 +107,7 @@ function generateDefinitionFile(
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, `./${prop.ref.name}`, prop.ref.name);
+                addSafeImport(definitionImports, `./${prop.ref.name}${options.esm ? ".js" : ""}`, prop.ref.name);
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
         }
@@ -188,13 +190,13 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.paramDefinition.name}`,
+                            `./definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
                             method.paramDefinition.name
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.paramDefinition.name}`,
+                        `../definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
                         method.paramDefinition.name
                     );
                 }
@@ -211,13 +213,13 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.returnDefinition.name}`,
+                            `./definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
                             method.returnDefinition.name
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.returnDefinition.name}`,
+                        `../definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
                         method.returnDefinition.name
                     );
                 }
@@ -241,7 +243,7 @@ export async function generate(
                 });
             } // End of PortMethod
             if (!mergedOptions.emitDefinitionsOnly) {
-                addSafeImport(serviceImports, `../ports/${port.name}`, port.name);
+                addSafeImport(serviceImports, `../ports/${port.name}${mergedOptions.esm ? ".js" : ""}`, port.name);
                 servicePorts.push({
                     name: sanitizePropName(port.name),
                     isReadonly: true,
@@ -263,7 +265,7 @@ export async function generate(
         } // End of Port
 
         if (!mergedOptions.emitDefinitionsOnly) {
-            addSafeImport(clientImports, `./services/${service.name}`, service.name);
+            addSafeImport(clientImports, `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`, service.name);
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
             serviceFile.addImportDeclarations(serviceImports);
@@ -353,7 +355,7 @@ export async function generate(
                 def.name,
                 ...Object.keys(def.enums).map((enumName) => ({ name: enumName, alias: def.name + enumName })),
             ],
-            moduleSpecifier: `./definitions/${def.name}`,
+            moduleSpecifier: `./definitions/${def.name}${mergedOptions.esm ? ".js" : ""}`,
         }))
     );
     if (!mergedOptions.emitDefinitionsOnly) {
@@ -362,19 +364,19 @@ export async function generate(
         indexFile.addExportDeclarations([
             {
                 namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
-                moduleSpecifier: "./client",
+                moduleSpecifier: `./client${mergedOptions.esm ? ".js" : ""}`,
             },
         ]);
         indexFile.addExportDeclarations(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
-                moduleSpecifier: `./services/${service.name}`,
+                moduleSpecifier: `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
-                moduleSpecifier: `./ports/${port.name}`,
+                moduleSpecifier: `./ports/${port.name}${mergedOptions.esm ? ".js" : ""}`,
             }))
         );
     }

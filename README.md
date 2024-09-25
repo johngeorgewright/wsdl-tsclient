@@ -1,6 +1,5 @@
 # WSDL TSClient
 
-[![travis-status](https://travis-ci.org/dderevjanik/wsdl-tsclient.svg?branch=master)](https://travis-ci.org/dderevjanik/wsdl-tsclient)
 ![license](https://img.shields.io/npm/l/wsdl-tsclient)
 [![Known Vulnerabilities](https://snyk.io/test/github/dderevjanik/wsdl-tsclient/badge.svg)](https://snyk.io/test/github/dderevjanik/wsdl-tsclient)
 [![npm-version](https://img.shields.io/npm/v/wsdl-tsclient)](https://npmjs.com/package/wsdl-tsclient)
@@ -25,6 +24,12 @@ or install it with `-g` to have CLI globally available.
 npm i -g wsdl-tsclient
 ```
 
+or you can use `npx` to run it without installing
+
+```sh
+npx wsdl-tsclient ./path/to/wsdl.wsdl -o ./generated/
+```
+
 ## Usage
 
 You can check example repository [wsdl-tsclient-example](https://github.com/dderevjanik/wsdl-tsclient-example)
@@ -47,16 +52,21 @@ wsdl-tsclient [options] [path]
 
 Options:
       --help                        Show help                          [boolean]
-  -v, --version                                                        [boolean]
-  -o                                Output directory         [string] [required]
-      --emitDefinitionsOnly         Generate only Definitions          [boolean]
+  -v, --version                     Show version number                [boolean]
+  -o                                Output directory for generated TypeScript
+                                    client                   [string] [required]
+      --emitDefinitionsOnly         Generate definitions only (interfaces and
+                                    types)                             [boolean]
       --modelNamePreffix            Prefix for generated interface names[string]
       --modelNameSuffix             Suffix for generated interface names[string]
-      --caseInsensitiveNames        Case-insensitive name while parsing
-                                    definition names                   [boolean]
-      --maxRecursiveDefinitionName  Maximum count of definition's with same name
-                                    but increased suffix. Will throw an error if
-                                    exceed                              [number]
+      --modelPropertyNaming         Property naming convention ('camelCase' or
+                                    'PascalCase')                       [string]
+      --caseInsensitiveNames        Parse WSDL definitions case-insensitively
+                                                                       [boolean]
+      --maxRecursiveDefinitionName  Maximum count of definitions with the same
+                                    name but increased suffix. Will throw an
+                                    error if exceeded.                  [number]
+      --esm                         Generate imports with .js suffix   [boolean]
       --quiet                       Suppress all logs                  [boolean]
       --verbose                     Print verbose logs                 [boolean]
       --no-color                    Logs without colors                [boolean]
@@ -104,6 +114,12 @@ for more information about the use of the client, read more about [soap](https:/
 ## How it works
 
 ![overview](./docs/Overview.png)
+
+## Develpoment
+
+- Clone the repository
+- Install dependencies `npm i`
+- Run tests `npm test`
 
 ## License
 

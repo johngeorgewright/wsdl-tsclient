@@ -37,7 +37,14 @@ export interface Options {
      * @default 64
      */
     maxRecursiveDefinitionName: number;
+    /**
+     * Property naming convention ('camelCase' or 'PascalCase')"
+     */
     modelPropertyNaming: ModelPropertyNaming;
+    /**
+     * Generate imports with .js suffix
+     */
+    esm: boolean
     /**
      * Print verbose logs
      * @default false
@@ -62,6 +69,7 @@ export const defaultOptions: Options = {
     caseInsensitiveNames: false,
     maxRecursiveDefinitionName: 64,
     modelPropertyNaming: null,
+    esm: false,
     //
     verbose: false,
     quiet: false,

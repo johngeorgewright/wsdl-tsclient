@@ -2,7 +2,7 @@
 import yargs from "yargs";
 import path from "path";
 import { Logger } from "./utils/logger";
-import { parseAndGenerate, Options } from "./index";
+import { parseAndGenerate, Options, ModelPropertyNaming } from "./index";
 import packageJson from "../package.json";
 
 const conf = yargs(process.argv.slice(2))
@@ -13,7 +13,7 @@ const conf = yargs(process.argv.slice(2))
     .demandOption(["o"])
     .option("o", {
         type: "string",
-        description: "Output directory",
+        description: "Output directory for generated TypeScript client",
     })
     .option("version", {
         alias: "v",
@@ -21,7 +21,7 @@ const conf = yargs(process.argv.slice(2))
     })
     .option("emitDefinitionsOnly", {
         type: "boolean",
-        description: "Generate only Definitions",
+        description: "Generate definitions only (interfaces and types)",
     })
     .option("modelNamePreffix", {
         type: "string",
@@ -31,13 +31,22 @@ const conf = yargs(process.argv.slice(2))
         type: "string",
         description: "Suffix for generated interface names",
     })
+    .option("modelPropertyNaming", {
+        type: "string",
+        description: "Property naming convention ('camelCase' or 'PascalCase')",
+    })
     .option("caseInsensitiveNames", {
         type: "boolean",
-        description: "Case-insensitive name while parsing definition names",
+        description: "Parse WSDL definitions case-insensitively",
     })
     .option("maxRecursiveDefinitionName", {
         type: "number",
-        description: "Maximum count of definition's with same name but increased suffix. Will throw an error if exceed",
+        description:
+            "Maximum count of definitions with the same name but increased suffix. Will throw an error if exceeded.",
+    })
+    .option("esm", {
+        type: "boolean",
+        description: "Generate imports with .js suffix",
     })
     .option("quiet", {
         type: "boolean",
@@ -50,7 +59,7 @@ const conf = yargs(process.argv.slice(2))
     .option("no-color", {
         type: "boolean",
         description: "Logs without colors",
-    }).argv;
+    }).parseSync();
 
 // Logger section
 
@@ -98,12 +107,24 @@ if (conf.modelNameSuffix) {
     options.modelNameSuffix = conf.modelNameSuffix;
 }
 
+if (conf.modelPropertyNaming) {
+    if (!["camelCase", "PascalCase"].includes(conf.modelPropertyNaming)) {
+        console.error("Incorrect modelPeropertyNaming value. Use 'camelCase' or 'PascalCase'");
+        process.exit(1);
+    }
+    options.modelPropertyNaming = conf.modelPropertyNaming as ModelPropertyNaming;
+}
+
 if (conf.maxRecursiveDefinitionName || conf.maxRecursiveDefinitionName == 0) {
     options.maxRecursiveDefinitionName = conf.maxRecursiveDefinitionName;
 }
 
 if (conf.caseInsensitiveNames) {
     options.caseInsensitiveNames = conf.caseInsensitiveNames;
+}
+
+if (conf.esm) {
+    options.esm = conf.esm;
 }
 
 Logger.debug("Options");
