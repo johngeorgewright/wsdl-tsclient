@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -50,7 +50,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseAndGenerate = exports.defaultOptions = exports.ModelPropertyNaming = exports.parseWsdl = exports.generate = void 0;
+exports.defaultOptions = exports.ModelPropertyNaming = exports.parseWsdl = exports.generate = void 0;
+exports.parseAndGenerate = parseAndGenerate;
 var path_1 = __importDefault(require("path"));
 var parser_1 = require("./parser");
 var generator_1 = require("./generator");
@@ -64,23 +65,25 @@ var ModelPropertyNaming;
 (function (ModelPropertyNaming) {
     ModelPropertyNaming["camelCase"] = "camelCase";
     ModelPropertyNaming["PascalCase"] = "PascalCase";
-})(ModelPropertyNaming = exports.ModelPropertyNaming || (exports.ModelPropertyNaming = {}));
+})(ModelPropertyNaming || (exports.ModelPropertyNaming = ModelPropertyNaming = {}));
 exports.defaultOptions = {
     emitDefinitionsOnly: false,
     modelNamePreffix: "",
     modelNameSuffix: "",
     caseInsensitiveNames: false,
+    useWsdlTypeNames: false,
     maxRecursiveDefinitionName: 64,
     modelPropertyNaming: null,
+    esm: false,
     //
     verbose: false,
     quiet: false,
     colors: true,
 };
-function parseAndGenerate(wsdlPath, outDir, options) {
-    if (options === void 0) { options = {}; }
-    return __awaiter(this, void 0, void 0, function () {
+function parseAndGenerate(wsdlPath_1, outDir_1) {
+    return __awaiter(this, arguments, void 0, function (wsdlPath, outDir, options) {
         var mergedOptions, timeParseStart, parsedWsdl, timeGenerateStart;
+        if (options === void 0) { options = {}; }
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -114,5 +117,4 @@ function parseAndGenerate(wsdlPath, outDir, options) {
         });
     });
 }
-exports.parseAndGenerate = parseAndGenerate;
 //# sourceMappingURL=index.js.map

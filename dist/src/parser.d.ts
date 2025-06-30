@@ -4,6 +4,7 @@ interface ParserOptions {
     modelNameSuffix: string;
     maxRecursiveDefinitionName: number;
     caseInsensitiveNames: boolean;
+    useWsdlTypeNames: boolean;
 }
 /**
  * Parse WSDL to domain model `ParsedWsdl`

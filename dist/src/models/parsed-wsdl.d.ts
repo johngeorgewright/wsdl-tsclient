@@ -1,4 +1,4 @@
-export declare type DefinitionProperty = {
+export type DefinitionProperty = {
     name: string;
     sourceName: string;
     description?: string;
@@ -25,7 +25,6 @@ export interface Definition {
     description?: string;
     docs: string[];
     properties: Array<DefinitionProperty>;
-    enums: Record<string, string[]>;
 }
 export interface Method {
     /** Will be used as name for generated Function/Method */

@@ -48,7 +48,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -79,9 +79,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseWsdl = void 0;
+exports.parseWsdl = parseWsdl;
 var path = __importStar(require("path"));
 var elements_1 = require("soap/lib/wsdl/elements");
+var utils_1 = require("soap/lib/utils");
 var index_1 = require("soap/lib/wsdl/index");
 var parsed_wsdl_1 = require("./models/parsed-wsdl");
 var change_case_1 = require("./utils/change-case");
@@ -93,6 +94,7 @@ var defaultOptions = {
     modelNameSuffix: "",
     maxRecursiveDefinitionName: 64,
     caseInsensitiveNames: false,
+    useWsdlTypeNames: false,
 };
 function findReferenceDefiniton(visited, definitionParts) {
     return visited.find(function (def) { return def.parts === definitionParts; });
@@ -117,6 +119,54 @@ function toPrimitiveType(type) {
     }
     return NODE_SOAP_PARSED_TYPES[type] || "string";
 }
+function findElementSchemaType(definitions, element) {
+    var _a, _b, _c;
+    if (!("$type" in element) && !("$ref" in element))
+        return element;
+    var type = element.$type || element.$ref;
+    if (!type)
+        return element;
+    var _d = (0, utils_1.splitQName)(type), prefix = _d.prefix, localName = _d.name;
+    var ns = (_b = (_a = element.schemaXmlns[prefix]) !== null && _a !== void 0 ? _a : definitions.xmlns[prefix]) !== null && _b !== void 0 ? _b : definitions.xmlns[element.targetNSAlias];
+    var schema = definitions.schemas[ns];
+    if (!schema)
+        return element;
+    var typeElement = (_c = schema.complexTypes[localName]) !== null && _c !== void 0 ? _c : schema.types[localName];
+    return typeElement;
+}
+function findPropSchemaType(definitions, parentElement, propName) {
+    if (!(parentElement === null || parentElement === void 0 ? void 0 : parentElement.children))
+        return undefined;
+    for (var _i = 0, _a = parentElement.children; _i < _a.length; _i++) {
+        var child = _a[_i];
+        if (child instanceof elements_1.ChoiceElement ||
+            child instanceof elements_1.SequenceElement ||
+            child instanceof elements_1.AllElement ||
+            child instanceof elements_1.SimpleContentElement ||
+            child instanceof elements_1.ComplexContentElement ||
+            child instanceof elements_1.ExtensionElement) {
+            return findPropSchemaType(definitions, child, propName);
+        }
+        if (child.$name === propName) {
+            if (child instanceof elements_1.ElementElement ||
+                child instanceof elements_1.ComplexTypeElement ||
+                child instanceof elements_1.SimpleTypeElement) {
+                return findElementSchemaType(definitions, child);
+            }
+        }
+    }
+    return undefined;
+}
+function getNameFromSchema(element) {
+    if (!element)
+        return undefined;
+    if ("$type" in element || "$ref" in element) {
+        var type = element.$type || element.$ref;
+        var localName = (0, utils_1.splitQName)(type).name;
+        return localName;
+    }
+    return element.$name;
+}
 /**
  * parse definition
  * @param parsedWsdl context of parsed wsdl
@@ -125,7 +175,7 @@ function toPrimitiveType(type) {
  * @param stack definitions stack of path to current subdefinition (immutable)
  * @param visitedDefs set of globally visited definitions to avoid circular definitions
  */
-function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs) {
+function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs, definitions, schema) {
     var defName = (0, change_case_1.changeCase)(name, { pascalCase: true });
     logger_1.Logger.debug("Parsing Definition ".concat(stack.join("."), ".").concat(name));
     var nonCollisionDefName;
@@ -142,7 +192,6 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
         docs: [name],
         properties: [],
         description: "",
-        enums: {},
     };
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
     visitedDefs.push({ name: definition.name, parts: defParts, definition: definition }); // NOTE: cache reference to this defintion globally (for avoiding circular references)
@@ -159,6 +208,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
         }
         else {
             Object.entries(defParts).forEach(function (_a) {
+                var _b, _c;
                 var propName = _a[0], type = _a[1];
                 if (propName === "targetNSAlias") {
                     definition.docs.push("@targetNSAlias `".concat(type, "`"));
@@ -170,31 +220,15 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     var stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        var enumResult = /string\|(.+)/.exec(type);
-                        if (enumResult) {
-                            // enum
-                            var enumName = (0, change_case_1.changeCase)(stripedPropName, { pascalCase: true });
-                            definition.properties.push({
-                                kind: "PRIMITIVE",
-                                name: stripedPropName,
-                                sourceName: propName,
-                                description: type,
-                                type: "".concat(enumName, " | keyof typeof ").concat(enumName),
-                                isArray: true,
-                            });
-                            definition.enums[enumName] = enumResult[1].split(",");
-                        }
-                        else {
-                            // primitive type
-                            definition.properties.push({
-                                kind: "PRIMITIVE",
-                                name: stripedPropName,
-                                sourceName: propName,
-                                description: type,
-                                type: toPrimitiveType(type),
-                                isArray: true,
-                            });
-                        }
+                        // primitive type
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: stripedPropName,
+                            sourceName: propName,
+                            description: type,
+                            type: toPrimitiveType(type),
+                            isArray: true,
+                        });
                     }
                     else if (type instanceof elements_1.ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
@@ -223,7 +257,9 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                         }
                         else {
                             try {
-                                var subDefinition = parseDefinition(parsedWsdl, options, stripedPropName, type, __spreadArray(__spreadArray([], stack, true), [propName], false), visitedDefs);
+                                var propSchema = findPropSchemaType(definitions, schema, stripedPropName);
+                                var guessPropName = (_b = getNameFromSchema(propSchema)) !== null && _b !== void 0 ? _b : stripedPropName;
+                                var subDefinition = parseDefinition(parsedWsdl, options, guessPropName, type, __spreadArray(__spreadArray([], stack, true), [propName], false), visitedDefs, definitions, propSchema);
                                 definition.properties.push({
                                     kind: "REFERENCE",
                                     name: stripedPropName,
@@ -240,31 +276,15 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     }
                 }
                 else if (typeof type === "string") {
-                    var enumResult = /string\|(.+)/.exec(type);
-                    if (enumResult) {
-                        // enum
-                        var enumName = (0, change_case_1.changeCase)(propName, { pascalCase: true });
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: propName,
-                            sourceName: propName,
-                            description: type,
-                            type: "".concat(enumName, " | keyof typeof ").concat(enumName),
-                            isArray: false,
-                        });
-                        definition.enums[enumName] = enumResult[1].split(",");
-                    }
-                    else {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: propName,
-                            sourceName: propName,
-                            description: type,
-                            type: toPrimitiveType(type),
-                            isArray: false,
-                        });
-                    }
+                    // primitive type
+                    definition.properties.push({
+                        kind: "PRIMITIVE",
+                        name: propName,
+                        sourceName: propName,
+                        description: type,
+                        type: toPrimitiveType(type),
+                        isArray: false,
+                    });
                 }
                 else if (type instanceof elements_1.ComplexTypeElement) {
                     // TODO: Finish complex type parsing by updating node-soap
@@ -294,7 +314,9 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     }
                     else {
                         try {
-                            var subDefinition = parseDefinition(parsedWsdl, options, propName, type, __spreadArray(__spreadArray([], stack, true), [propName], false), visitedDefs);
+                            var propSchema = findPropSchemaType(definitions, schema, propName);
+                            var guessPropName = (_c = getNameFromSchema(propSchema)) !== null && _c !== void 0 ? _c : propName;
+                            var subDefinition = parseDefinition(parsedWsdl, options, guessPropName, type, __spreadArray(__spreadArray([], stack, true), [propName], false), visitedDefs, definitions, propSchema);
                             definition.properties.push({
                                 kind: "REFERENCE",
                                 name: propName,
@@ -305,7 +327,6 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                         }
                         catch (err) {
                             var e = new Error("Error while parsing Subdefinition for ".concat(stack.join("."), ".").concat(name));
-                            e.stack.split("\n").slice(0, 2).join("\n") + "\n" + err.stack;
                             throw e;
                         }
                     }
@@ -376,13 +397,16 @@ function parseWsdl(wsdlPath, options) {
                                             // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
                                             var typeName = (_a = inputMessage.element.$type) !== null && _a !== void 0 ? _a : inputMessage.element.$name;
                                             var type = parsedWsdl.findDefinition((_b = inputMessage.element.$type) !== null && _b !== void 0 ? _b : inputMessage.element.$name);
+                                            var schema = mergedOptions.useWsdlTypeNames
+                                                ? findElementSchemaType(wsdl.definitions, inputMessage.element)
+                                                : undefined;
                                             inputDefinition =
-                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, typeName, inputMessage.parts, [typeName], visitedDefinitions);
+                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, typeName, inputMessage.parts, [typeName], visitedDefinitions, wsdl.definitions, schema);
                                         }
                                         else if (inputMessage.parts) {
                                             var type = parsedWsdl.findDefinition(requestParamName);
                                             inputDefinition =
-                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, requestParamName, inputMessage.parts, [requestParamName], visitedDefinitions);
+                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, requestParamName, inputMessage.parts, [requestParamName], visitedDefinitions, wsdl.definitions, undefined);
                                         }
                                         else {
                                             logger_1.Logger.debug("Method '".concat(serviceName, ".").concat(portName, ".").concat(methodName, "' doesn't have any input defined"));
@@ -399,13 +423,16 @@ function parseWsdl(wsdlPath, options) {
                                             // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
                                             var typeName = (_c = outputMessage.element.$type) !== null && _c !== void 0 ? _c : outputMessage.element.$name;
                                             var type = parsedWsdl.findDefinition(typeName);
+                                            var schema = mergedOptions.useWsdlTypeNames
+                                                ? findElementSchemaType(wsdl.definitions, outputMessage.element)
+                                                : undefined;
                                             outputDefinition =
-                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, typeName, outputMessage.parts, [typeName], visitedDefinitions);
+                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, typeName, outputMessage.parts, [typeName], visitedDefinitions, wsdl.definitions, schema);
                                         }
                                         else {
                                             var type = parsedWsdl.findDefinition(responseParamName);
                                             outputDefinition =
-                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, responseParamName, outputMessage.parts, [responseParamName], visitedDefinitions);
+                                                type !== null && type !== void 0 ? type : parseDefinition(parsedWsdl, mergedOptions, responseParamName, outputMessage.parts, [responseParamName], visitedDefinitions, wsdl.definitions, undefined);
                                         }
                                     }
                                     var camelParamName = (0, change_case_1.changeCase)(requestParamName);
@@ -414,7 +441,7 @@ function parseWsdl(wsdlPath, options) {
                                         paramName: javascript_1.reservedKeywords.includes(camelParamName)
                                             ? "".concat(camelParamName, "Param")
                                             : camelParamName,
-                                        paramDefinition: inputDefinition,
+                                        paramDefinition: inputDefinition, // TODO: Use string from generated definition files
                                         returnDefinition: outputDefinition, // TODO: Use string from generated definition files
                                     };
                                     portMethods.push(portMethod);
@@ -441,5 +468,4 @@ function parseWsdl(wsdlPath, options) {
         });
     });
 }
-exports.parseWsdl = parseWsdl;
 //# sourceMappingURL=parser.js.map

@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generate = void 0;
+exports.generate = generate;
 var camelcase_1 = __importDefault(require("camelcase"));
 var path_1 = __importDefault(require("path"));
 var ts_morph_1 = require("ts-morph");
@@ -68,6 +68,7 @@ var logger_1 = require("./utils/logger");
 var defaultOptions = {
     emitDefinitionsOnly: false,
     modelPropertyNaming: null,
+    esm: false,
 };
 /**
  * To avoid duplicated imports
@@ -133,22 +134,11 @@ function generateDefinitionFile(project, definition, defDir, stack, generated, o
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, "./".concat(prop.ref.name), prop.ref.name);
+                addSafeImport(definitionImports, "./".concat(prop.ref.name).concat(options.esm ? ".js" : ""), prop.ref.name);
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
         }
     }
-    defFile.addEnums(Object.entries(definition.enums).map(function (_a) {
-        var name = _a[0], values = _a[1];
-        return ({
-            name: name,
-            isExported: true,
-            members: values.map(function (value) { return ({
-                name: value,
-                value: value,
-            }); }),
-        });
-    }));
     defFile.addImportDeclarations(definitionImports);
     defFile.addStatements([
         {
@@ -199,17 +189,17 @@ function generate(parsedWsdl, outDir, options) {
                             if (!allDefinitions.includes(method.paramDefinition)) {
                                 // Definition is not generated
                                 generateDefinitionFile(project, method.paramDefinition, defDir, [method.paramDefinition.name], allDefinitions, mergedOptions);
-                                addSafeImport(clientImports, "./definitions/".concat(method.paramDefinition.name), method.paramDefinition.name);
+                                addSafeImport(clientImports, "./definitions/".concat(method.paramDefinition.name).concat(mergedOptions.esm ? ".js" : ""), method.paramDefinition.name);
                             }
-                            addSafeImport(portImports, "../definitions/".concat(method.paramDefinition.name), method.paramDefinition.name);
+                            addSafeImport(portImports, "../definitions/".concat(method.paramDefinition.name).concat(mergedOptions.esm ? ".js" : ""), method.paramDefinition.name);
                         }
                         if (method.returnDefinition !== null) {
                             if (!allDefinitions.includes(method.returnDefinition)) {
                                 // Definition is not generated
                                 generateDefinitionFile(project, method.returnDefinition, defDir, [method.returnDefinition.name], allDefinitions, mergedOptions);
-                                addSafeImport(clientImports, "./definitions/".concat(method.returnDefinition.name), method.returnDefinition.name);
+                                addSafeImport(clientImports, "./definitions/".concat(method.returnDefinition.name).concat(mergedOptions.esm ? ".js" : ""), method.returnDefinition.name);
                             }
-                            addSafeImport(portImports, "../definitions/".concat(method.returnDefinition.name), method.returnDefinition.name);
+                            addSafeImport(portImports, "../definitions/".concat(method.returnDefinition.name).concat(mergedOptions.esm ? ".js" : ""), method.returnDefinition.name);
                         }
                         // TODO: Deduplicate PortMethods
                         allMethods.push(method);
@@ -229,7 +219,7 @@ function generate(parsedWsdl, outDir, options) {
                         });
                     } // End of PortMethod
                     if (!mergedOptions.emitDefinitionsOnly) {
-                        addSafeImport(serviceImports, "../ports/".concat(port.name), port.name);
+                        addSafeImport(serviceImports, "../ports/".concat(port.name).concat(mergedOptions.esm ? ".js" : ""), port.name);
                         servicePorts.push({
                             name: sanitizePropName(port.name),
                             isReadonly: true,
@@ -250,7 +240,7 @@ function generate(parsedWsdl, outDir, options) {
                     }
                 } // End of Port
                 if (!mergedOptions.emitDefinitionsOnly) {
-                    addSafeImport(clientImports, "./services/".concat(service.name), service.name);
+                    addSafeImport(clientImports, "./services/".concat(service.name).concat(mergedOptions.esm ? ".js" : ""), service.name);
                     clientServices.push({ name: sanitizePropName(service.name), type: service.name });
                     serviceFile.addImportDeclarations(serviceImports);
                     serviceFile.addStatements([
@@ -328,10 +318,8 @@ function generate(parsedWsdl, outDir, options) {
                 overwrite: true,
             });
             indexFile.addExportDeclarations(allDefinitions.map(function (def) { return ({
-                namedExports: __spreadArray([
-                    def.name
-                ], Object.keys(def.enums).map(function (enumName) { return ({ name: enumName, alias: def.name + enumName }); }), true),
-                moduleSpecifier: "./definitions/".concat(def.name),
+                namedExports: [def.name],
+                moduleSpecifier: "./definitions/".concat(def.name).concat(mergedOptions.esm ? ".js" : ""),
             }); }));
             if (!mergedOptions.emitDefinitionsOnly) {
                 // TODO: Aggregate all exports during declarations generation
@@ -339,16 +327,16 @@ function generate(parsedWsdl, outDir, options) {
                 indexFile.addExportDeclarations([
                     {
                         namedExports: ["createClientAsync", "".concat(parsedWsdl.name, "Client")],
-                        moduleSpecifier: "./client",
+                        moduleSpecifier: "./client".concat(mergedOptions.esm ? ".js" : ""),
                     },
                 ]);
                 indexFile.addExportDeclarations(parsedWsdl.services.map(function (service) { return ({
                     namedExports: [service.name],
-                    moduleSpecifier: "./services/".concat(service.name),
+                    moduleSpecifier: "./services/".concat(service.name).concat(mergedOptions.esm ? ".js" : ""),
                 }); }));
                 indexFile.addExportDeclarations(parsedWsdl.ports.map(function (port) { return ({
                     namedExports: [port.name],
-                    moduleSpecifier: "./ports/".concat(port.name),
+                    moduleSpecifier: "./ports/".concat(port.name).concat(mergedOptions.esm ? ".js" : ""),
                 }); }));
             }
             logger_1.Logger.log("Writing Index file: ".concat(path_1.default.resolve(path_1.default.join(outDir, "index")), ".ts"));
@@ -357,5 +345,4 @@ function generate(parsedWsdl, outDir, options) {
         });
     });
 }
-exports.generate = generate;
 //# sourceMappingURL=generator.js.map
