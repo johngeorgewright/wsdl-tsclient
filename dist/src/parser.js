@@ -26,13 +26,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,8 +53,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -192,6 +202,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
         docs: [name],
         properties: [],
         description: "",
+        enums: {},
     };
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
     visitedDefs.push({ name: definition.name, parts: defParts, definition: definition }); // NOTE: cache reference to this defintion globally (for avoiding circular references)
@@ -220,15 +231,31 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     var stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: stripedPropName,
-                            sourceName: propName,
-                            description: type,
-                            type: toPrimitiveType(type),
-                            isArray: true,
-                        });
+                        var enumResult = /string\|(.+)/.exec(type);
+                        if (enumResult) {
+                            // enum
+                            var enumName = (0, change_case_1.changeCase)(stripedPropName, { pascalCase: true });
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: "".concat(enumName, " | keyof typeof ").concat(enumName),
+                                isArray: true,
+                            });
+                            definition.enums[enumName] = enumResult[1].split(",");
+                        }
+                        else {
+                            // primitive type
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: toPrimitiveType(type),
+                                isArray: true,
+                            });
+                        }
                     }
                     else if (type instanceof elements_1.ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
@@ -276,15 +303,31 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                     }
                 }
                 else if (typeof type === "string") {
-                    // primitive type
-                    definition.properties.push({
-                        kind: "PRIMITIVE",
-                        name: propName,
-                        sourceName: propName,
-                        description: type,
-                        type: toPrimitiveType(type),
-                        isArray: false,
-                    });
+                    var enumResult = /string\|(.+)/.exec(type);
+                    if (enumResult) {
+                        // enum
+                        var enumName = (0, change_case_1.changeCase)(propName, { pascalCase: true });
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: "".concat(enumName, " | keyof typeof ").concat(enumName),
+                            isArray: false,
+                        });
+                        definition.enums[enumName] = enumResult[1].split(",");
+                    }
+                    else {
+                        // primitive type
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: toPrimitiveType(type),
+                            isArray: false,
+                        });
+                    }
                 }
                 else if (type instanceof elements_1.ComplexTypeElement) {
                     // TODO: Finish complex type parsing by updating node-soap
@@ -327,6 +370,7 @@ function parseDefinition(parsedWsdl, options, name, defParts, stack, visitedDefs
                         }
                         catch (err) {
                             var e = new Error("Error while parsing Subdefinition for ".concat(stack.join("."), ".").concat(name));
+                            e.stack.split("\n").slice(0, 2).join("\n") + "\n" + err.stack;
                             throw e;
                         }
                     }
