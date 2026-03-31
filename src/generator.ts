@@ -1,20 +1,20 @@
 import camelcase from "camelcase";
 import path from "path";
 import {
-    ImportDeclarationStructure,
-    MethodSignatureStructure,
-    OptionalKind,
+    type ImportDeclarationStructure,
+    type MethodSignatureStructure,
+    type OptionalKind,
     Project,
-    PropertySignatureStructure,
+    type PropertySignatureStructure,
     StructureKind,
 } from "ts-morph";
 import { ModelPropertyNaming } from ".";
-import { Definition, Method, ParsedWsdl } from "./models/parsed-wsdl";
+import { type Definition, type Method, ParsedWsdl } from "./models/parsed-wsdl";
 import { Logger } from "./utils/logger";
 
 export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;
-    modelPropertyNaming: ModelPropertyNaming;
+    modelPropertyNaming: ModelPropertyNaming | null;
     esm: boolean;
 }
 
@@ -69,7 +69,7 @@ function createProperty(
 
 function generateDefinitionFile(
     project: Project,
-    definition: null | Definition,
+    definition: Definition,
     defDir: string,
     stack: string[],
     generated: Definition[],
@@ -98,7 +98,7 @@ function generateDefinitionFile(
         }
         if (prop.kind === "PRIMITIVE") {
             // e.g. string
-            definitionProperties.push(createProperty(prop.name, prop.type, prop.description, prop.isArray));
+            definitionProperties.push(createProperty(prop.name, prop.type, prop.description ?? "", !!prop.isArray));
         } else if (prop.kind === "REFERENCE") {
             // e.g. Items
             if (!generated.includes(prop.ref)) {
@@ -109,7 +109,7 @@ function generateDefinitionFile(
             if (prop.ref.name !== definition.name) {
                 addSafeImport(definitionImports, `./${prop.ref.name}${options.esm ? ".js" : ""}`, prop.ref.name);
             }
-            definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
+            definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, !!prop.isArray));
         }
     }
 

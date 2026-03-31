@@ -2,7 +2,7 @@
 import yargs from "yargs";
 import path from "path";
 import { Logger } from "./utils/logger";
-import { parseAndGenerate, Options, ModelPropertyNaming } from "./index";
+import { parseAndGenerate, type Options, ModelPropertyNaming } from "./index";
 import packageJson from "../package.json";
 
 const conf = yargs(process.argv.slice(2))

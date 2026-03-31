@@ -2,7 +2,10 @@
   "name": "@johngw/wsdl-tsclient",
   "version": "1.7.1",
   "description": "Generate typescript soap client with typescript definitons from WSDL file.",
-  "main": "dist/src/index.js",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "bin": {
     "wsdl-tsclient": "dist/src/cli.js"
   },

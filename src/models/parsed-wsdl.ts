@@ -111,7 +111,10 @@ export class ParsedWsdl {
     private _options: Options;
     private _warns: string[];
 
-    constructor(options: Partial<Options>) {
+    constructor(name: string, wsdlFilename: string, wsdlPath: string, options: Partial<Options>) {
+        this.name = name;
+        this.wsdlFilename = wsdlFilename;
+        this.wsdlPath = wsdlPath;
         this._options = {
             ...defaultOptions,
             ...options,
@@ -120,7 +123,7 @@ export class ParsedWsdl {
     }
 
     /** Find already parsed definition by it's name */
-    findDefinition(definitionName: string): Definition {
+    findDefinition(definitionName: string): Definition | undefined {
         return this.definitions.find((def) => def.name === definitionName);
     }
 

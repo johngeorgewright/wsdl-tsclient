@@ -45,7 +45,7 @@ export interface Options {
     /**
      * Property naming convention ('camelCase' or 'PascalCase')"
      */
-    modelPropertyNaming: ModelPropertyNaming;
+    modelPropertyNaming: ModelPropertyNaming | null;
     /**
      * Generate imports with .js suffix
      */
