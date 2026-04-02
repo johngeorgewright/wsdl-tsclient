@@ -199,6 +199,7 @@ function parseDefinition(
                                 type: `${enumName} | keyof typeof ${enumName}`,
                                 isArray: true,
                             });
+                            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                             definition.enums[enumName] = enumResult[1]!.split(",");
                         } else {
                             // primitive type
@@ -276,6 +277,7 @@ function parseDefinition(
                             type: `${enumName} | keyof typeof ${enumName}`,
                             isArray: false,
                         });
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                         definition.enums[enumName] = enumResult[1]!.split(",");
                     } else {
                         // primitive type
