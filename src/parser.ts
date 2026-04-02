@@ -10,9 +10,9 @@ import {
     SequenceElement,
     SimpleContentElement,
     SimpleTypeElement,
-} from "soap/lib/wsdl/elements";
-import { splitQName } from "soap/lib/utils";
-import { open_wsdl } from "soap/lib/wsdl/index";
+} from "soap/lib/wsdl/elements.js";
+import { splitQName } from "soap/lib/utils.js";
+import { open_wsdl } from "soap/lib/wsdl/index.js";
 import { type Definition, type Method, ParsedWsdl, type Port, type Service } from "./models/parsed-wsdl.js";
 import { changeCase } from "./utils/change-case.js";
 import { stripExtension } from "./utils/file.js";
