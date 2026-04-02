@@ -199,7 +199,7 @@ function parseDefinition(
                                 type: `${enumName} | keyof typeof ${enumName}`,
                                 isArray: true,
                             });
-                            definition.enums[enumName] = enumResult[1].split(",");
+                            definition.enums[enumName] = enumResult[1]!.split(",");
                         } else {
                             // primitive type
                             definition.properties.push({
@@ -276,7 +276,7 @@ function parseDefinition(
                             type: `${enumName} | keyof typeof ${enumName}`,
                             isArray: false,
                         });
-                        definition.enums[enumName] = enumResult[1].split(",");
+                        definition.enums[enumName] = enumResult[1]!.split(",");
                     } else {
                         // primitive type
                         definition.properties.push({
@@ -335,7 +335,10 @@ function parseDefinition(
                             });
                         } catch (err) {
                             const e = new Error(`Error while parsing Subdefinition for ${stack.join(".")}.${name}`);
-                            e.stack.split("\n").slice(0, 2).join("\n") + "\n" + err.stack;
+                            e.stack =
+                                e.stack?.split("\n").slice(0, 2).join("\n") +
+                                "\n" +
+                                (err instanceof Error ? err.stack : String(err));
                             throw e;
                         }
                     }
