@@ -1,11 +1,11 @@
 import path from "path";
-import { parseWsdl } from "./parser";
-import { generate } from "./generator";
-import { timeElapsed } from "./utils/timer";
-import { Logger } from "./utils/logger";
+import { parseWsdl } from "./parser.js";
+import { generate } from "./generator.js";
+import { timeElapsed } from "./utils/timer.js";
+import { Logger } from "./utils/logger.js";
 
-export { generate } from "./generator";
-export { parseWsdl } from "./parser";
+export { generate } from "./generator.js";
+export { parseWsdl } from "./parser.js";
 
 export enum ModelPropertyNaming {
     "camelCase" = "camelCase",

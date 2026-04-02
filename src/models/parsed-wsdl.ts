@@ -1,5 +1,5 @@
 import sanitizeFilename from "sanitize-filename";
-import { Logger } from "../utils/logger";
+import { Logger } from "../utils/logger.js";
 
 export type DefinitionProperty =
     | {

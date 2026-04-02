@@ -8,9 +8,9 @@ import {
     type PropertySignatureStructure,
     StructureKind,
 } from "ts-morph";
-import { ModelPropertyNaming } from ".";
-import { type Definition, type Method, ParsedWsdl } from "./models/parsed-wsdl";
-import { Logger } from "./utils/logger";
+import { ModelPropertyNaming } from "./index.js";
+import { type Definition, type Method, ParsedWsdl } from "./models/parsed-wsdl.js";
+import { Logger } from "./utils/logger.js";
 
 export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;

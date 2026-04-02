@@ -13,11 +13,11 @@ import {
 } from "soap/lib/wsdl/elements";
 import { splitQName } from "soap/lib/utils";
 import { open_wsdl } from "soap/lib/wsdl/index";
-import { type Definition, type Method, ParsedWsdl, type Port, type Service } from "./models/parsed-wsdl";
-import { changeCase } from "./utils/change-case";
-import { stripExtension } from "./utils/file";
-import { reservedKeywords } from "./utils/javascript";
-import { Logger } from "./utils/logger";
+import { type Definition, type Method, ParsedWsdl, type Port, type Service } from "./models/parsed-wsdl.js";
+import { changeCase } from "./utils/change-case.js";
+import { stripExtension } from "./utils/file.js";
+import { reservedKeywords } from "./utils/javascript.js";
+import { Logger } from "./utils/logger.js";
 
 interface ParserOptions {
     modelNamePreffix: string;

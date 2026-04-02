@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import yargs from "yargs";
 import path from "path";
-import { Logger } from "./utils/logger";
-import { parseAndGenerate, type Options, ModelPropertyNaming } from "./index";
-import packageJson from "../package.json";
+import { Logger } from "./utils/logger.js";
+import { parseAndGenerate, type Options, ModelPropertyNaming } from "./index.js";
+import packageJson from "../package.json" with { type: "json" };
 
 const conf = yargs(process.argv.slice(2))
     .version(packageJson.version)
