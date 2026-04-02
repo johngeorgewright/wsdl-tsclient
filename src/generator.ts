@@ -1,28 +1,36 @@
 import camelcase from "camelcase";
 import path from "path";
 import {
-    ImportDeclarationStructure,
-    MethodSignatureStructure,
-    OptionalKind,
+    type ImportDeclarationStructure,
+    type MethodSignatureStructure,
+    type OptionalKind,
     Project,
-    PropertySignatureStructure,
+    type PropertySignatureStructure,
     StructureKind,
 } from "ts-morph";
-import { ModelPropertyNaming } from ".";
-import { Definition, Method, ParsedWsdl } from "./models/parsed-wsdl";
-import { Logger } from "./utils/logger";
+import { ModelPropertyNaming } from "./index.js";
+import { type Definition, type Method, ParsedWsdl } from "./models/parsed-wsdl.js";
+import { Logger } from "./utils/logger.js";
 
 export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;
-    modelPropertyNaming: ModelPropertyNaming;
+    modelPropertyNaming: ModelPropertyNaming | null;
     esm: boolean;
+    esmExtension: ".js" | ".ts";
+    typedImports: boolean;
 }
 
 const defaultOptions: GeneratorOptions = {
     emitDefinitionsOnly: false,
     modelPropertyNaming: null,
     esm: false,
+    esmExtension: ".js",
+    typedImports: false,
 };
+
+function esmSuffix(options: GeneratorOptions): string {
+    return options.esm ? options.esmExtension : "";
+}
 
 /**
  * To avoid duplicated imports
@@ -30,12 +38,14 @@ const defaultOptions: GeneratorOptions = {
 function addSafeImport(
     imports: OptionalKind<ImportDeclarationStructure>[],
     moduleSpecifier: string,
-    namedImport: string
+    namedImport: string,
+    isTypeOnly = false
 ) {
     if (!imports.find((imp) => imp.moduleSpecifier == moduleSpecifier)) {
         imports.push({
             moduleSpecifier,
             namedImports: [{ name: namedImport }],
+            isTypeOnly,
         });
     }
 }
@@ -69,7 +79,7 @@ function createProperty(
 
 function generateDefinitionFile(
     project: Project,
-    definition: null | Definition,
+    definition: Definition,
     defDir: string,
     stack: string[],
     generated: Definition[],
@@ -98,7 +108,7 @@ function generateDefinitionFile(
         }
         if (prop.kind === "PRIMITIVE") {
             // e.g. string
-            definitionProperties.push(createProperty(prop.name, prop.type, prop.description, prop.isArray));
+            definitionProperties.push(createProperty(prop.name, prop.type, prop.description ?? "", !!prop.isArray));
         } else if (prop.kind === "REFERENCE") {
             // e.g. Items
             if (!generated.includes(prop.ref)) {
@@ -107,11 +117,27 @@ function generateDefinitionFile(
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, `./${prop.ref.name}${options.esm ? ".js" : ""}`, prop.ref.name);
+                addSafeImport(
+                    definitionImports,
+                    `./${prop.ref.name}${esmSuffix(options)}`,
+                    prop.ref.name,
+                    options.typedImports || options.esm
+                );
             }
-            definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, prop.isArray));
+            definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, !!prop.isArray));
         }
     }
+
+    defFile.addEnums(
+        Object.entries(definition.enums).map(([name, values]) => ({
+            name,
+            isExported: true,
+            members: values.map((value) => ({
+                name: value,
+                value,
+            })),
+        }))
+    );
 
     defFile.addImportDeclarations(definitionImports);
     defFile.addStatements([
@@ -137,6 +163,7 @@ export async function generate(
         ...defaultOptions,
         ...options,
     };
+    const typeOnlyInterfaces = mergedOptions.typedImports || mergedOptions.esm;
     const project = new Project();
 
     const portsDir = path.join(outDir, "ports");
@@ -179,14 +206,16 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
-                            method.paramDefinition.name
+                            `./definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
+                            method.paramDefinition.name,
+                            typeOnlyInterfaces
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
-                        method.paramDefinition.name
+                        `../definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
+                        method.paramDefinition.name,
+                        typeOnlyInterfaces
                     );
                 }
                 if (method.returnDefinition !== null) {
@@ -202,14 +231,16 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
-                            method.returnDefinition.name
+                            `./definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
+                            method.returnDefinition.name,
+                            typeOnlyInterfaces
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
-                        method.returnDefinition.name
+                        `../definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
+                        method.returnDefinition.name,
+                        typeOnlyInterfaces
                     );
                 }
                 // TODO: Deduplicate PortMethods
@@ -232,7 +263,12 @@ export async function generate(
                 });
             } // End of PortMethod
             if (!mergedOptions.emitDefinitionsOnly) {
-                addSafeImport(serviceImports, `../ports/${port.name}${mergedOptions.esm ? ".js" : ""}`, port.name);
+                addSafeImport(
+                    serviceImports,
+                    `../ports/${port.name}${esmSuffix(mergedOptions)}`,
+                    port.name,
+                    typeOnlyInterfaces
+                );
                 servicePorts.push({
                     name: sanitizePropName(port.name),
                     isReadonly: true,
@@ -254,7 +290,12 @@ export async function generate(
         } // End of Port
 
         if (!mergedOptions.emitDefinitionsOnly) {
-            addSafeImport(clientImports, `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`, service.name);
+            addSafeImport(
+                clientImports,
+                `./services/${service.name}${esmSuffix(mergedOptions)}`,
+                service.name,
+                typeOnlyInterfaces
+            );
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
             serviceFile.addImportDeclarations(serviceImports);
@@ -277,14 +318,29 @@ export async function generate(
         const clientFile = project.createSourceFile(clientFilePath, "", {
             overwrite: true,
         });
-        clientFile.addImportDeclaration({
-            moduleSpecifier: "soap",
-            namedImports: [
-                { name: "Client", alias: "SoapClient" },
-                { name: "createClientAsync", alias: "soapCreateClientAsync" },
-                { name: "IExOptions", alias: "ISoapExOptions" },
-            ],
-        });
+        if (typeOnlyInterfaces) {
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [
+                    { name: "Client", alias: "SoapClient" },
+                    { name: "IExOptions", alias: "ISoapExOptions" },
+                ],
+                isTypeOnly: true,
+            });
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [{ name: "createClientAsync", alias: "soapCreateClientAsync" }],
+            });
+        } else {
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [
+                    { name: "Client", alias: "SoapClient" },
+                    { name: "createClientAsync", alias: "soapCreateClientAsync" },
+                    { name: "IExOptions", alias: "ISoapExOptions" },
+                ],
+            });
+        }
         clientFile.addImportDeclarations(clientImports);
         clientFile.addStatements([
             {
@@ -341,28 +397,57 @@ export async function generate(
     indexFile.addExportDeclarations(
         allDefinitions.map((def) => ({
             namedExports: [def.name],
-            moduleSpecifier: `./definitions/${def.name}${mergedOptions.esm ? ".js" : ""}`,
+            moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
+            isTypeOnly: typeOnlyInterfaces,
         }))
+    );
+    // Export enums separately (they are values, not types)
+    indexFile.addExportDeclarations(
+        allDefinitions
+            .filter((def) => Object.keys(def.enums).length > 0)
+            .map((def) => ({
+                namedExports: Object.keys(def.enums).map((enumName) => ({
+                    name: enumName,
+                    alias: def.name + enumName,
+                })),
+                moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
+            }))
     );
     if (!mergedOptions.emitDefinitionsOnly) {
         // TODO: Aggregate all exports during declarations generation
         // https://ts-morph.com/details/exports
-        indexFile.addExportDeclarations([
-            {
-                namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
-                moduleSpecifier: `./client${mergedOptions.esm ? ".js" : ""}`,
-            },
-        ]);
+        if (typeOnlyInterfaces) {
+            indexFile.addExportDeclarations([
+                {
+                    namedExports: ["createClientAsync"],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                },
+                {
+                    namedExports: [`${parsedWsdl.name}Client`],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                    isTypeOnly: true,
+                },
+            ]);
+        } else {
+            indexFile.addExportDeclarations([
+                {
+                    namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                },
+            ]);
+        }
         indexFile.addExportDeclarations(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
-                moduleSpecifier: `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`,
+                moduleSpecifier: `./services/${service.name}${esmSuffix(mergedOptions)}`,
+                isTypeOnly: typeOnlyInterfaces,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
-                moduleSpecifier: `./ports/${port.name}${mergedOptions.esm ? ".js" : ""}`,
+                moduleSpecifier: `./ports/${port.name}${esmSuffix(mergedOptions)}`,
+                isTypeOnly: typeOnlyInterfaces,
             }))
         );
     }

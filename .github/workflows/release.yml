@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release-github:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release-created: ${{ steps.release.outputs.release_created }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          manifest-file: .github/.release-please-manifest.json
+          config-file: .github/release-please-config.json
+
+  release-test:
+    needs: release-github
+    if: needs.release-github.outputs.release-created == 'true'
+    uses: ./.github/workflows/test.yml
+
+  release-npm:
+    needs: release-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build
+      - run: npm publish --provenance --access public

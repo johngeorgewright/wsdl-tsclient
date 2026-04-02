@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import yargs from "yargs";
 import path from "path";
-import { Logger } from "./utils/logger";
-import { parseAndGenerate, Options, ModelPropertyNaming } from "./index";
-import packageJson from "../package.json";
+import { Logger } from "./utils/logger.js";
+import { parseAndGenerate, type Options, ModelPropertyNaming } from "./index.js";
+import packageJson from "../package.json" with { type: "json" };
 
 const conf = yargs(process.argv.slice(2))
     .version(packageJson.version)
@@ -51,6 +51,14 @@ const conf = yargs(process.argv.slice(2))
     .option("esm", {
         type: "boolean",
         description: "Generate imports with .js suffix",
+    })
+    .option("esmExtension", {
+        type: "string",
+        description: "Extension to use for ESM imports ('.js' or '.ts')",
+    })
+    .option("typedImports", {
+        type: "boolean",
+        description: "Use `import type` syntax for type-only imports",
     })
     .option("quiet", {
         type: "boolean",
@@ -134,6 +142,18 @@ if (conf.useWsdlTypeNames) {
 
 if (conf.esm) {
     options.esm = conf.esm;
+}
+
+if (conf.esmExtension) {
+    if (!".js|.ts".split("|").includes(conf.esmExtension)) {
+        console.error("Incorrect esmExtension value. Use '.js' or '.ts'");
+        process.exit(1);
+    }
+    options.esmExtension = conf.esmExtension as ".js" | ".ts";
+}
+
+if (conf.typedImports) {
+    options.typedImports = conf.typedImports;
 }
 
 Logger.debug("Options");

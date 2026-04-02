@@ -13,11 +13,11 @@ import {
 } from "soap/lib/wsdl/elements";
 import { splitQName } from "soap/lib/utils";
 import { open_wsdl } from "soap/lib/wsdl/index";
-import { Definition, Method, ParsedWsdl, Port, Service } from "./models/parsed-wsdl";
-import { changeCase } from "./utils/change-case";
-import { stripExtension } from "./utils/file";
-import { reservedKeywords } from "./utils/javascript";
-import { Logger } from "./utils/logger";
+import { type Definition, type Method, ParsedWsdl, type Port, type Service } from "./models/parsed-wsdl.js";
+import { changeCase } from "./utils/change-case.js";
+import { stripExtension } from "./utils/file.js";
+import { reservedKeywords } from "./utils/javascript.js";
+import { Logger } from "./utils/logger.js";
 
 interface ParserOptions {
     modelNamePreffix: string;
@@ -74,7 +74,11 @@ function findElementSchemaType(definitions: DefinitionsElement, element: Element
     const type = element.$type || element.$ref;
     if (!type) return element;
     const { prefix, name: localName } = splitQName(type);
-    const ns = element.schemaXmlns[prefix] ?? definitions.xmlns[prefix] ?? definitions.xmlns[element.targetNSAlias];
+    const ns =
+        element.schemaXmlns[prefix] ??
+        definitions.xmlns?.[prefix] ??
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        definitions.xmlns?.[element.targetNSAlias!];
     const schema = definitions.schemas[ns];
     if (!schema) return element;
     const typeElement = schema.complexTypes[localName] ?? schema.types[localName];
@@ -133,7 +137,7 @@ function parseDefinition(
     parsedWsdl: ParsedWsdl,
     options: ParserOptions,
     name: string,
-    defParts: { [propNameType: string]: any },
+    defParts: { [propNameType: string]: any } | undefined,
     stack: string[],
     visitedDefs: Array<VisitedDefinition>,
     definitions: DefinitionsElement,
@@ -158,10 +162,11 @@ function parseDefinition(
         docs: [name],
         properties: [],
         description: "",
+        enums: {},
     };
 
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
-    visitedDefs.push({ name: definition.name, parts: defParts, definition }); // NOTE: cache reference to this defintion globally (for avoiding circular references)
+    visitedDefs.push({ name: definition.name, parts: defParts ?? {}, definition }); // NOTE: cache reference to this definition globally (for avoiding circular references)
     if (defParts) {
         // NOTE: `node-soap` has sometimes problem with parsing wsdl files, it includes `defParts.undefined = undefined`
         if ("undefined" in defParts && defParts.undefined === undefined) {
@@ -182,15 +187,30 @@ function parseDefinition(
                     const stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: stripedPropName,
-                            sourceName: propName,
-                            description: type,
-                            type: toPrimitiveType(type),
-                            isArray: true,
-                        });
+                        const enumResult = /string\|(.+)/.exec(type);
+                        if (enumResult) {
+                            // enum
+                            const enumName = changeCase(stripedPropName, { pascalCase: true });
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: `${enumName} | keyof typeof ${enumName}`,
+                                isArray: true,
+                            });
+                            definition.enums[enumName] = enumResult[1]!.split(",");
+                        } else {
+                            // primitive type
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: toPrimitiveType(type),
+                                isArray: true,
+                            });
+                        }
                     } else if (type instanceof ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
                         definition.properties.push({
@@ -244,15 +264,30 @@ function parseDefinition(
                         }
                     }
                 } else if (typeof type === "string") {
-                    // primitive type
-                    definition.properties.push({
-                        kind: "PRIMITIVE",
-                        name: propName,
-                        sourceName: propName,
-                        description: type,
-                        type: toPrimitiveType(type),
-                        isArray: false,
-                    });
+                    const enumResult = /string\|(.+)/.exec(type);
+                    if (enumResult) {
+                        // enum
+                        const enumName = changeCase(propName, { pascalCase: true });
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: `${enumName} | keyof typeof ${enumName}`,
+                            isArray: false,
+                        });
+                        definition.enums[enumName] = enumResult[1]!.split(",");
+                    } else {
+                        // primitive type
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: toPrimitiveType(type),
+                            isArray: false,
+                        });
+                    }
                 } else if (type instanceof ComplexTypeElement) {
                     // TODO: Finish complex type parsing by updating node-soap
                     definition.properties.push({
@@ -300,6 +335,10 @@ function parseDefinition(
                             });
                         } catch (err) {
                             const e = new Error(`Error while parsing Subdefinition for ${stack.join(".")}.${name}`);
+                            e.stack =
+                                e.stack?.split("\n").slice(0, 2).join("\n") +
+                                "\n" +
+                                (err instanceof Error ? err.stack : String(err));
                             throw e;
                         }
                     }
@@ -336,18 +375,20 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                     return reject(new Error("WSDL is undefined"));
                 }
 
-                const parsedWsdl = new ParsedWsdl({
-                    maxStack: options.maxRecursiveDefinitionName,
-                    caseInsensitiveNames: options.caseInsensitiveNames,
-                    modelNamePreffix: options.modelNamePreffix,
-                    modelNameSuffix: options.modelNameSuffix,
-                });
                 const filename = path.basename(wsdlPath);
-                parsedWsdl.name = changeCase(stripExtension(filename), {
-                    pascalCase: true,
-                });
-                parsedWsdl.wsdlFilename = path.basename(filename);
-                parsedWsdl.wsdlPath = path.resolve(wsdlPath);
+                const parsedWsdl = new ParsedWsdl(
+                    changeCase(stripExtension(filename), {
+                        pascalCase: true,
+                    }),
+                    path.basename(filename),
+                    path.resolve(wsdlPath),
+                    {
+                        maxStack: options.maxRecursiveDefinitionName,
+                        caseInsensitiveNames: options.caseInsensitiveNames,
+                        modelNamePreffix: options.modelNamePreffix,
+                        modelNameSuffix: options.modelNameSuffix,
+                    }
+                );
 
                 const visitedDefinitions: Array<VisitedDefinition> = [];
 
@@ -366,18 +407,19 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
 
                             // TODO: Deduplicate code below by refactoring it to external function. Is it even possible ?
                             let requestParamName = "request";
-                            let inputDefinition: Definition = null; // default type
+                            let inputDefinition: Definition | null = null; // default type
                             if (method.input) {
                                 if (method.input.$name) {
                                     requestParamName = method.input.$name;
                                 }
-                                const inputMessage = wsdl.definitions.messages[method.input.$name];
-                                if (inputMessage.element) {
+                                const inputMessage = method.input.$name
+                                    ? wsdl.definitions.messages[method.input.$name]
+                                    : undefined;
+                                if (inputMessage?.element?.$type || inputMessage?.element?.$name) {
                                     // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
-                                    const typeName = inputMessage.element.$type ?? inputMessage.element.$name;
-                                    const type = parsedWsdl.findDefinition(
-                                        inputMessage.element.$type ?? inputMessage.element.$name
-                                    );
+                                    const typeName = (inputMessage.element.$type ??
+                                        inputMessage.element.$name) as string;
+                                    const type = parsedWsdl.findDefinition(typeName);
                                     const schema = mergedOptions.useWsdlTypeNames
                                         ? findElementSchemaType(wsdl.definitions, inputMessage.element)
                                         : undefined;
@@ -393,7 +435,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             wsdl.definitions,
                                             schema
                                         );
-                                } else if (inputMessage.parts) {
+                                } else if (inputMessage?.parts) {
                                     const type = parsedWsdl.findDefinition(requestParamName);
                                     inputDefinition =
                                         type ??
@@ -415,15 +457,18 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                             }
 
                             let responseParamName = "response";
-                            let outputDefinition: Definition = null; // default type, `{}` or `unknown` ?
+                            let outputDefinition: Definition | null = null; // default type, `{}` or `unknown` ?
                             if (method.output) {
                                 if (method.output.$name) {
                                     responseParamName = method.output.$name;
                                 }
-                                const outputMessage = wsdl.definitions.messages[method.output.$name];
-                                if (outputMessage.element) {
+                                const outputMessage =
+                                    (!!method.output.$name && wsdl.definitions.messages[method.output.$name]) ||
+                                    undefined;
+                                if (outputMessage?.element?.$type || outputMessage?.element?.$name) {
                                     // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
-                                    const typeName = outputMessage.element.$type ?? outputMessage.element.$name;
+                                    const typeName = (outputMessage.element.$type ??
+                                        outputMessage.element.$name) as string;
                                     const type = parsedWsdl.findDefinition(typeName);
                                     const schema = mergedOptions.useWsdlTypeNames
                                         ? findElementSchemaType(wsdl.definitions, outputMessage.element)
@@ -448,7 +493,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             parsedWsdl,
                                             mergedOptions,
                                             responseParamName,
-                                            outputMessage.parts,
+                                            outputMessage?.parts,
                                             [responseParamName],
                                             visitedDefinitions,
                                             wsdl.definitions,

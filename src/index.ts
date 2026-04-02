@@ -1,11 +1,11 @@
 import path from "path";
-import { parseWsdl } from "./parser";
-import { generate } from "./generator";
-import { timeElapsed } from "./utils/timer";
-import { Logger } from "./utils/logger";
+import { parseWsdl } from "./parser.js";
+import { generate } from "./generator.js";
+import { timeElapsed } from "./utils/timer.js";
+import { Logger } from "./utils/logger.js";
 
-export { generate } from "./generator";
-export { parseWsdl } from "./parser";
+export { generate } from "./generator.js";
+export { parseWsdl } from "./parser.js";
 
 export enum ModelPropertyNaming {
     "camelCase" = "camelCase",
@@ -43,13 +43,23 @@ export interface Options {
      */
     maxRecursiveDefinitionName: number;
     /**
-     * Property naming convention ('camelCase' or 'PascalCase')"
+     * Property naming convention ('camelCase' or 'PascalCase')
      */
-    modelPropertyNaming: ModelPropertyNaming;
+    modelPropertyNaming: ModelPropertyNaming | null;
     /**
      * Generate imports with .js suffix
      */
     esm: boolean;
+    /**
+     * Use `import type` syntax for type-only imports
+     * @default false
+     */
+    typedImports: boolean;
+    /**
+     * Extension to use for ESM imports ('.js' or '.ts')
+     * @default ".js"
+     */
+    esmExtension: ".js" | ".ts";
     /**
      * Print verbose logs
      * @default false
@@ -76,6 +86,8 @@ export const defaultOptions: Options = {
     maxRecursiveDefinitionName: 64,
     modelPropertyNaming: null,
     esm: false,
+    esmExtension: ".js",
+    typedImports: false,
     //
     verbose: false,
     quiet: false,

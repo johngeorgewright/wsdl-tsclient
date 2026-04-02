@@ -1,25 +1,22 @@
-import test from "tape";
-import { existsSync } from "fs";
+import { describe, it } from "vitest";
 import { parseAndGenerate } from "../../src";
 import { Logger } from "../../src/utils/logger";
 import { typecheck } from "../utils/tsc";
 
 const target = "self_referencing";
 
-test(target, async t => {
+describe(target, () => {
     Logger.disabled();
 
     const input = `./test/resources/${target}.wsdl`;
     const outdir = "./test/generated";
 
-    t.test(`${target} - generate wsdl client`, async t => {
+    it(`${target} - generate wsdl client`, async () => {
         await parseAndGenerate(input, outdir);
-        t.end();
     });
 
-    t.test(`${target} - compile`, async t => {
+    it(`${target} - compile`, async () => {
         await typecheck(`${outdir}/selfreferencing/index.ts`);
-		t.end();
     });
 
 });
