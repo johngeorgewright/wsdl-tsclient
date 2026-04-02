@@ -7,9 +7,5 @@ export function lowerCaseFirstLetter(str: string): string {
 }
 
 export function toCamel(str: string) {
-    return str.replace(
-        /(_\w)/g,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        (m) => m[1]!.toUpperCase()
-    );
+    return str.replace(/(_\w)/g, (m) => m[1]!.toUpperCase());
 }

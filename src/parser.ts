@@ -75,10 +75,7 @@ function findElementSchemaType(definitions: DefinitionsElement, element: Element
     if (!type) return element;
     const { prefix, name: localName } = splitQName(type);
     const ns =
-        element.schemaXmlns[prefix] ??
-        definitions.xmlns?.[prefix] ??
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        definitions.xmlns?.[element.targetNSAlias!];
+        element.schemaXmlns[prefix] ?? definitions.xmlns?.[prefix] ?? definitions.xmlns?.[element.targetNSAlias!];
     const schema = definitions.schemas[ns];
     if (!schema) return element;
     const typeElement = schema.complexTypes[localName] ?? schema.types[localName];
@@ -88,7 +85,7 @@ function findElementSchemaType(definitions: DefinitionsElement, element: Element
 function findPropSchemaType(
     definitions: DefinitionsElement,
     parentElement: ElementSchema | undefined,
-    propName: string
+    propName: string,
 ): ElementSchema | undefined {
     if (!parentElement?.children) return undefined;
     for (const child of parentElement.children) {
@@ -141,7 +138,7 @@ function parseDefinition(
     stack: string[],
     visitedDefs: Array<VisitedDefinition>,
     definitions: DefinitionsElement,
-    schema: ElementSchema | undefined
+    schema: ElementSchema | undefined,
 ): Definition {
     const defName = changeCase(name, { pascalCase: true });
 
@@ -199,7 +196,6 @@ function parseDefinition(
                                 type: `${enumName} | keyof typeof ${enumName}`,
                                 isArray: true,
                             });
-                            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                             definition.enums[enumName] = enumResult[1]!.split(",");
                         } else {
                             // primitive type
@@ -247,7 +243,7 @@ function parseDefinition(
                                     [...stack, propName],
                                     visitedDefs,
                                     definitions,
-                                    propSchema
+                                    propSchema,
                                 );
                                 definition.properties.push({
                                     kind: "REFERENCE",
@@ -258,7 +254,7 @@ function parseDefinition(
                                 });
                             } catch (err) {
                                 const e = new Error(
-                                    `Error while parsing Subdefinition for '${stack.join(".")}.${name}'`
+                                    `Error while parsing Subdefinition for '${stack.join(".")}.${name}'`,
                                 );
                                 throw e;
                             }
@@ -277,7 +273,6 @@ function parseDefinition(
                             type: `${enumName} | keyof typeof ${enumName}`,
                             isArray: false,
                         });
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                         definition.enums[enumName] = enumResult[1]!.split(",");
                     } else {
                         // primitive type
@@ -326,7 +321,7 @@ function parseDefinition(
                                 [...stack, propName],
                                 visitedDefs,
                                 definitions,
-                                propSchema
+                                propSchema,
                             );
                             definition.properties.push({
                                 kind: "REFERENCE",
@@ -389,7 +384,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                         caseInsensitiveNames: options.caseInsensitiveNames,
                         modelNamePreffix: options.modelNamePreffix,
                         modelNameSuffix: options.modelNameSuffix,
-                    }
+                    },
                 );
 
                 const visitedDefinitions: Array<VisitedDefinition> = [];
@@ -435,7 +430,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             [typeName],
                                             visitedDefinitions,
                                             wsdl.definitions,
-                                            schema
+                                            schema,
                                         );
                                 } else if (inputMessage?.parts) {
                                     const type = parsedWsdl.findDefinition(requestParamName);
@@ -449,11 +444,11 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             [requestParamName],
                                             visitedDefinitions,
                                             wsdl.definitions,
-                                            undefined
+                                            undefined,
                                         );
                                 } else {
                                     Logger.debug(
-                                        `Method '${serviceName}.${portName}.${methodName}' doesn't have any input defined`
+                                        `Method '${serviceName}.${portName}.${methodName}' doesn't have any input defined`,
                                     );
                                 }
                             }
@@ -485,7 +480,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             [typeName],
                                             visitedDefinitions,
                                             wsdl.definitions,
-                                            schema
+                                            schema,
                                         );
                                 } else {
                                     const type = parsedWsdl.findDefinition(responseParamName);
@@ -499,7 +494,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                             [responseParamName],
                                             visitedDefinitions,
                                             wsdl.definitions,
-                                            undefined
+                                            undefined,
                                         );
                                 }
                             }
@@ -536,7 +531,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                 parsedWsdl.ports = allPorts;
 
                 return resolve(parsedWsdl);
-            }
+            },
         );
     });
 }

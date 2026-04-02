@@ -23,8 +23,6 @@ Key design: `DefinitionProperty` is either `PRIMITIVE` (maps to TS string/number
 ```bash
 npm run build          # Compile to ./dist (ESM, ESNext target)
 npm test               # Run all test suites via vitest (pretest cleans generated/)
-npm run lint           # ESLint on ./src
-npm run lint:fix       # Auto-fix lint issues
 npm run dev            # vite-node development mode
 ```
 
@@ -32,16 +30,15 @@ Tests use **vitest**. Pattern: generate from WSDL → assert files exist → typ
 
 ## Code Style
 
--   **Prettier**: 4-space indent, 120-char line width
--   **ESLint**: `eslint:recommended` + `@typescript-eslint/recommended`; `any` is allowed
--   **TypeScript**: Full `strict: true` with `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, ESNext module/target
--   Name collisions resolved by appending incrementing numbers (e.g., `Item`, `Item1`)
--   Reserve-word avoidance via `src/utils/javascript.ts` keyword list
+- **Prettier**: 4-space indent, 120-char line width
+- **TypeScript**: Full `strict: true` with `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, ESNext module/target
+- Name collisions resolved by appending incrementing numbers (e.g., `Item`, `Item1`)
+- Reserve-word avoidance via `src/utils/javascript.ts` keyword list
 
 ## Conventions
 
--   Use `Logger` from `src/utils/logger.ts` for output (supports `DEBUG`/`NO_COLOR` env vars)
--   Non-fatal errors are logged, not thrown — generation continues when possible
--   Test files live in `test/node-soap/` with corresponding WSDL in `test/resources/`
--   Generated test output goes to `test/generated/<name>/` (auto-cleaned before test runs)
--   Async/await for all I/O; no callbacks
+- Use `Logger` from `src/utils/logger.ts` for output (supports `DEBUG`/`NO_COLOR` env vars)
+- Non-fatal errors are logged, not thrown — generation continues when possible
+- Test files live in `test/node-soap/` with corresponding WSDL in `test/resources/`
+- Generated test output goes to `test/generated/<name>/` (auto-cleaned before test runs)
+- Async/await for all I/O; no callbacks
