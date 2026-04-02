@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1](https://github.com/johngeorgewright/wsdl-tsclient/compare/v2.0.0...v2.0.1) (2026-04-02)
+
+
+### Documentation
+
+* update README to reflect correct package name and usage ([7c2bf85](https://github.com/johngeorgewright/wsdl-tsclient/commit/7c2bf8564f911bf84b481c21550d0b4ef0233729))
+
+
+### Maintenance
+
+* **npm:** release to environment ([2cca26e](https://github.com/johngeorgewright/wsdl-tsclient/commit/2cca26e92e7468e3c17c5c25f66bc6d17bc2f3c1))
+
 ## [2.0.0](https://github.com/johngeorgewright/wsdl-tsclient/compare/v1.7.1...v2.0.0) (2026-04-02)
 
 
