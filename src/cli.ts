@@ -56,6 +56,10 @@ const conf = yargs(process.argv.slice(2))
         type: "string",
         description: "Extension to use for ESM imports ('.js' or '.ts')",
     })
+    .option("typedImports", {
+        type: "boolean",
+        description: "Use `import type` syntax for type-only imports",
+    })
     .option("quiet", {
         type: "boolean",
         description: "Suppress all logs",
@@ -146,6 +150,10 @@ if (conf.esmExtension) {
         process.exit(1);
     }
     options.esmExtension = conf.esmExtension as ".js" | ".ts";
+}
+
+if (conf.typedImports) {
+    options.typedImports = conf.typedImports;
 }
 
 Logger.debug("Options");

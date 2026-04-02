@@ -51,6 +51,11 @@ export interface Options {
      */
     esm: boolean;
     /**
+     * Use `import type` syntax for type-only imports
+     * @default false
+     */
+    typedImports: boolean;
+    /**
      * Extension to use for ESM imports ('.js' or '.ts')
      * @default ".js"
      */
@@ -82,6 +87,7 @@ export const defaultOptions: Options = {
     modelPropertyNaming: null,
     esm: false,
     esmExtension: ".js",
+    typedImports: false,
     //
     verbose: false,
     quiet: false,

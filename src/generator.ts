@@ -17,6 +17,7 @@ export interface GeneratorOptions {
     modelPropertyNaming: ModelPropertyNaming | null;
     esm: boolean;
     esmExtension: ".js" | ".ts";
+    typedImports: boolean;
 }
 
 const defaultOptions: GeneratorOptions = {
@@ -24,6 +25,7 @@ const defaultOptions: GeneratorOptions = {
     modelPropertyNaming: null,
     esm: false,
     esmExtension: ".js",
+    typedImports: false,
 };
 
 function esmSuffix(options: GeneratorOptions): string {
@@ -36,12 +38,14 @@ function esmSuffix(options: GeneratorOptions): string {
 function addSafeImport(
     imports: OptionalKind<ImportDeclarationStructure>[],
     moduleSpecifier: string,
-    namedImport: string
+    namedImport: string,
+    isTypeOnly = false
 ) {
     if (!imports.find((imp) => imp.moduleSpecifier == moduleSpecifier)) {
         imports.push({
             moduleSpecifier,
             namedImports: [{ name: namedImport }],
+            isTypeOnly,
         });
     }
 }
@@ -113,7 +117,12 @@ function generateDefinitionFile(
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, `./${prop.ref.name}${esmSuffix(options)}`, prop.ref.name);
+                addSafeImport(
+                    definitionImports,
+                    `./${prop.ref.name}${esmSuffix(options)}`,
+                    prop.ref.name,
+                    options.typedImports
+                );
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, !!prop.isArray));
         }
@@ -186,13 +195,15 @@ export async function generate(
                         addSafeImport(
                             clientImports,
                             `./definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
-                            method.paramDefinition.name
+                            method.paramDefinition.name,
+                            mergedOptions.typedImports
                         );
                     }
                     addSafeImport(
                         portImports,
                         `../definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
-                        method.paramDefinition.name
+                        method.paramDefinition.name,
+                        mergedOptions.typedImports
                     );
                 }
                 if (method.returnDefinition !== null) {
@@ -209,13 +220,15 @@ export async function generate(
                         addSafeImport(
                             clientImports,
                             `./definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
-                            method.returnDefinition.name
+                            method.returnDefinition.name,
+                            mergedOptions.typedImports
                         );
                     }
                     addSafeImport(
                         portImports,
                         `../definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
-                        method.returnDefinition.name
+                        method.returnDefinition.name,
+                        mergedOptions.typedImports
                     );
                 }
                 // TODO: Deduplicate PortMethods
@@ -238,7 +251,12 @@ export async function generate(
                 });
             } // End of PortMethod
             if (!mergedOptions.emitDefinitionsOnly) {
-                addSafeImport(serviceImports, `../ports/${port.name}${esmSuffix(mergedOptions)}`, port.name);
+                addSafeImport(
+                    serviceImports,
+                    `../ports/${port.name}${esmSuffix(mergedOptions)}`,
+                    port.name,
+                    mergedOptions.typedImports
+                );
                 servicePorts.push({
                     name: sanitizePropName(port.name),
                     isReadonly: true,
@@ -260,7 +278,12 @@ export async function generate(
         } // End of Port
 
         if (!mergedOptions.emitDefinitionsOnly) {
-            addSafeImport(clientImports, `./services/${service.name}${esmSuffix(mergedOptions)}`, service.name);
+            addSafeImport(
+                clientImports,
+                `./services/${service.name}${esmSuffix(mergedOptions)}`,
+                service.name,
+                mergedOptions.typedImports
+            );
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
             serviceFile.addImportDeclarations(serviceImports);
@@ -283,14 +306,29 @@ export async function generate(
         const clientFile = project.createSourceFile(clientFilePath, "", {
             overwrite: true,
         });
-        clientFile.addImportDeclaration({
-            moduleSpecifier: "soap",
-            namedImports: [
-                { name: "Client", alias: "SoapClient" },
-                { name: "createClientAsync", alias: "soapCreateClientAsync" },
-                { name: "IExOptions", alias: "ISoapExOptions" },
-            ],
-        });
+        if (mergedOptions.typedImports) {
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [
+                    { name: "Client", alias: "SoapClient" },
+                    { name: "IExOptions", alias: "ISoapExOptions" },
+                ],
+                isTypeOnly: true,
+            });
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [{ name: "createClientAsync", alias: "soapCreateClientAsync" }],
+            });
+        } else {
+            clientFile.addImportDeclaration({
+                moduleSpecifier: "soap",
+                namedImports: [
+                    { name: "Client", alias: "SoapClient" },
+                    { name: "createClientAsync", alias: "soapCreateClientAsync" },
+                    { name: "IExOptions", alias: "ISoapExOptions" },
+                ],
+            });
+        }
         clientFile.addImportDeclarations(clientImports);
         clientFile.addStatements([
             {
