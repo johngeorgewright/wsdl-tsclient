@@ -62,6 +62,44 @@ describe(target, () => {
         });
     });
 
+    it(`${target} - index file uses export type for definitions`, () => {
+        const content = readFileSync(`${genDir}/index.ts`, "utf-8");
+        const lines = content.split("\n");
+        const defExports = lines.filter((l) => l.includes("./definitions/"));
+        expect(defExports.length).toBeGreaterThan(0);
+        defExports.forEach((line) => {
+            expect(line).toMatch(/^export type /);
+        });
+    });
+
+    it(`${target} - index file uses export type for services`, () => {
+        const content = readFileSync(`${genDir}/index.ts`, "utf-8");
+        const lines = content.split("\n");
+        const serviceExports = lines.filter((l) => l.includes("./services/"));
+        expect(serviceExports.length).toBeGreaterThan(0);
+        serviceExports.forEach((line) => {
+            expect(line).toMatch(/^export type /);
+        });
+    });
+
+    it(`${target} - index file uses export type for ports`, () => {
+        const content = readFileSync(`${genDir}/index.ts`, "utf-8");
+        const lines = content.split("\n");
+        const portExports = lines.filter((l) => l.includes("./ports/"));
+        expect(portExports.length).toBeGreaterThan(0);
+        portExports.forEach((line) => {
+            expect(line).toMatch(/^export type /);
+        });
+    });
+
+    it(`${target} - index file splits client exports (value vs type)`, () => {
+        const content = readFileSync(`${genDir}/index.ts`, "utf-8");
+        // createClientAsync is a value, should be regular export
+        expect(content).toMatch(/export \{[^}]*createClientAsync/);
+        // Client interface should be export type
+        expect(content).toMatch(/export type \{[^}]*Client/);
+    });
+
     it(`${target} - compile`, async () => {
         await typecheck(`${genDir}/index.ts`);
     });

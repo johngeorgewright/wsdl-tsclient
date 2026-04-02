@@ -26,5 +26,4 @@ describe(target, () => {
     it(`${target} - compile`, async () => {
         await typecheck(`${outdir}/dummy/index.ts`);
     });
-
 });

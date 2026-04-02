@@ -162,6 +162,7 @@ function parseDefinition(
         docs: [name],
         properties: [],
         description: "",
+        enums: {},
     };
 
     parsedWsdl.definitions.push(definition); // Must be here to avoid name collision with `findNonCollisionDefinitionName` if sub-definition has same name
@@ -186,15 +187,30 @@ function parseDefinition(
                     const stripedPropName = propName.substring(0, propName.length - 2);
                     // Array of
                     if (typeof type === "string") {
-                        // primitive type
-                        definition.properties.push({
-                            kind: "PRIMITIVE",
-                            name: stripedPropName,
-                            sourceName: propName,
-                            description: type,
-                            type: toPrimitiveType(type),
-                            isArray: true,
-                        });
+                        const enumResult = /string\|(.+)/.exec(type);
+                        if (enumResult) {
+                            // enum
+                            const enumName = changeCase(stripedPropName, { pascalCase: true });
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: `${enumName} | keyof typeof ${enumName}`,
+                                isArray: true,
+                            });
+                            definition.enums[enumName] = enumResult[1].split(",");
+                        } else {
+                            // primitive type
+                            definition.properties.push({
+                                kind: "PRIMITIVE",
+                                name: stripedPropName,
+                                sourceName: propName,
+                                description: type,
+                                type: toPrimitiveType(type),
+                                isArray: true,
+                            });
+                        }
                     } else if (type instanceof ComplexTypeElement) {
                         // TODO: Finish complex type parsing by updating node-soap
                         definition.properties.push({
@@ -248,15 +264,30 @@ function parseDefinition(
                         }
                     }
                 } else if (typeof type === "string") {
-                    // primitive type
-                    definition.properties.push({
-                        kind: "PRIMITIVE",
-                        name: propName,
-                        sourceName: propName,
-                        description: type,
-                        type: toPrimitiveType(type),
-                        isArray: false,
-                    });
+                    const enumResult = /string\|(.+)/.exec(type);
+                    if (enumResult) {
+                        // enum
+                        const enumName = changeCase(propName, { pascalCase: true });
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: `${enumName} | keyof typeof ${enumName}`,
+                            isArray: false,
+                        });
+                        definition.enums[enumName] = enumResult[1].split(",");
+                    } else {
+                        // primitive type
+                        definition.properties.push({
+                            kind: "PRIMITIVE",
+                            name: propName,
+                            sourceName: propName,
+                            description: type,
+                            type: toPrimitiveType(type),
+                            isArray: false,
+                        });
+                    }
                 } else if (type instanceof ComplexTypeElement) {
                     // TODO: Finish complex type parsing by updating node-soap
                     definition.properties.push({
@@ -304,6 +335,7 @@ function parseDefinition(
                             });
                         } catch (err) {
                             const e = new Error(`Error while parsing Subdefinition for ${stack.join(".")}.${name}`);
+                            e.stack.split("\n").slice(0, 2).join("\n") + "\n" + err.stack;
                             throw e;
                         }
                     }

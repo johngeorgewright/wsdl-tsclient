@@ -31,6 +31,7 @@ export interface Definition {
     description?: string;
     docs: string[];
     properties: Array<DefinitionProperty>;
+    enums: Record<string, string[]>;
 }
 
 export interface Method {

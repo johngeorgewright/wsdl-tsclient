@@ -128,6 +128,17 @@ function generateDefinitionFile(
         }
     }
 
+    defFile.addEnums(
+        Object.entries(definition.enums).map(([name, values]) => ({
+            name,
+            isExported: true,
+            members: values.map((value) => ({
+                name: value,
+                value,
+            })),
+        }))
+    );
+
     defFile.addImportDeclarations(definitionImports);
     defFile.addStatements([
         {
@@ -386,27 +397,56 @@ export async function generate(
         allDefinitions.map((def) => ({
             namedExports: [def.name],
             moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
+            isTypeOnly: mergedOptions.typedImports,
         }))
+    );
+    // Export enums separately (they are values, not types)
+    indexFile.addExportDeclarations(
+        allDefinitions
+            .filter((def) => Object.keys(def.enums).length > 0)
+            .map((def) => ({
+                namedExports: Object.keys(def.enums).map((enumName) => ({
+                    name: enumName,
+                    alias: def.name + enumName,
+                })),
+                moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
+            }))
     );
     if (!mergedOptions.emitDefinitionsOnly) {
         // TODO: Aggregate all exports during declarations generation
         // https://ts-morph.com/details/exports
-        indexFile.addExportDeclarations([
-            {
-                namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
-                moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
-            },
-        ]);
+        if (mergedOptions.typedImports) {
+            indexFile.addExportDeclarations([
+                {
+                    namedExports: ["createClientAsync"],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                },
+                {
+                    namedExports: [`${parsedWsdl.name}Client`],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                    isTypeOnly: true,
+                },
+            ]);
+        } else {
+            indexFile.addExportDeclarations([
+                {
+                    namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
+                    moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
+                },
+            ]);
+        }
         indexFile.addExportDeclarations(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
                 moduleSpecifier: `./services/${service.name}${esmSuffix(mergedOptions)}`,
+                isTypeOnly: mergedOptions.typedImports,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
                 moduleSpecifier: `./ports/${port.name}${esmSuffix(mergedOptions)}`,
+                isTypeOnly: mergedOptions.typedImports,
             }))
         );
     }
