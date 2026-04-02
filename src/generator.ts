@@ -121,7 +121,7 @@ function generateDefinitionFile(
                     definitionImports,
                     `./${prop.ref.name}${esmSuffix(options)}`,
                     prop.ref.name,
-                    options.typedImports
+                    options.typedImports || options.esm
                 );
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, !!prop.isArray));
@@ -163,6 +163,7 @@ export async function generate(
         ...defaultOptions,
         ...options,
     };
+    const typeOnlyInterfaces = mergedOptions.typedImports || mergedOptions.esm;
     const project = new Project();
 
     const portsDir = path.join(outDir, "ports");
@@ -207,14 +208,14 @@ export async function generate(
                             clientImports,
                             `./definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
                             method.paramDefinition.name,
-                            mergedOptions.typedImports
+                            typeOnlyInterfaces
                         );
                     }
                     addSafeImport(
                         portImports,
                         `../definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
                         method.paramDefinition.name,
-                        mergedOptions.typedImports
+                        typeOnlyInterfaces
                     );
                 }
                 if (method.returnDefinition !== null) {
@@ -232,14 +233,14 @@ export async function generate(
                             clientImports,
                             `./definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
                             method.returnDefinition.name,
-                            mergedOptions.typedImports
+                            typeOnlyInterfaces
                         );
                     }
                     addSafeImport(
                         portImports,
                         `../definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
                         method.returnDefinition.name,
-                        mergedOptions.typedImports
+                        typeOnlyInterfaces
                     );
                 }
                 // TODO: Deduplicate PortMethods
@@ -266,7 +267,7 @@ export async function generate(
                     serviceImports,
                     `../ports/${port.name}${esmSuffix(mergedOptions)}`,
                     port.name,
-                    mergedOptions.typedImports
+                    typeOnlyInterfaces
                 );
                 servicePorts.push({
                     name: sanitizePropName(port.name),
@@ -293,7 +294,7 @@ export async function generate(
                 clientImports,
                 `./services/${service.name}${esmSuffix(mergedOptions)}`,
                 service.name,
-                mergedOptions.typedImports
+                typeOnlyInterfaces
             );
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
@@ -317,7 +318,7 @@ export async function generate(
         const clientFile = project.createSourceFile(clientFilePath, "", {
             overwrite: true,
         });
-        if (mergedOptions.typedImports) {
+        if (typeOnlyInterfaces) {
             clientFile.addImportDeclaration({
                 moduleSpecifier: "soap",
                 namedImports: [
@@ -397,7 +398,7 @@ export async function generate(
         allDefinitions.map((def) => ({
             namedExports: [def.name],
             moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
-            isTypeOnly: mergedOptions.typedImports,
+            isTypeOnly: typeOnlyInterfaces,
         }))
     );
     // Export enums separately (they are values, not types)
@@ -415,7 +416,7 @@ export async function generate(
     if (!mergedOptions.emitDefinitionsOnly) {
         // TODO: Aggregate all exports during declarations generation
         // https://ts-morph.com/details/exports
-        if (mergedOptions.typedImports) {
+        if (typeOnlyInterfaces) {
             indexFile.addExportDeclarations([
                 {
                     namedExports: ["createClientAsync"],
@@ -439,14 +440,14 @@ export async function generate(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
                 moduleSpecifier: `./services/${service.name}${esmSuffix(mergedOptions)}`,
-                isTypeOnly: mergedOptions.typedImports,
+                isTypeOnly: typeOnlyInterfaces,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
                 moduleSpecifier: `./ports/${port.name}${esmSuffix(mergedOptions)}`,
-                isTypeOnly: mergedOptions.typedImports,
+                isTypeOnly: typeOnlyInterfaces,
             }))
         );
     }
