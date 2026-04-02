@@ -43,7 +43,7 @@ export interface Options {
      */
     maxRecursiveDefinitionName: number;
     /**
-     * Property naming convention ('camelCase' or 'PascalCase')"
+     * Property naming convention ('camelCase' or 'PascalCase')
      */
     modelPropertyNaming: ModelPropertyNaming | null;
     /**
