@@ -1,10 +1,10 @@
 import { promisify } from "node:util";
-import { exec as execCb } from "node:child_process";
+import { execFile as execFileCb } from "node:child_process";
 
-const exec = promisify(execCb);
+const execFile = promisify(execFileCb);
 
 export async function typecheck(pathToIndex: string) {
-    await exec(`tsc ${pathToIndex} --noEmit --esModuleInterop`, {
+    await execFile("tsc", [pathToIndex, "--noEmit", "--esModuleInterop"], {
         env: process.env,
     });
 }
