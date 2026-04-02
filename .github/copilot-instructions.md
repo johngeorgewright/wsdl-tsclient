@@ -21,7 +21,7 @@ Key design: `DefinitionProperty` is either `PRIMITIVE` (maps to TS string/number
 ## Build and Test
 
 ```bash
-npm run build          # Compile to ./dist (CommonJS, ES5 target)
+npm run build          # Compile to ./dist (ESM, ESNext target)
 npm test               # Run all test suites via vitest (pretest cleans generated/)
 npm run lint           # ESLint on ./src
 npm run lint:fix       # Auto-fix lint issues
@@ -34,7 +34,7 @@ Tests use **vitest**. Pattern: generate from WSDL → assert files exist → typ
 
 -   **Prettier**: 4-space indent, 120-char line width
 -   **ESLint**: `eslint:recommended` + `@typescript-eslint/recommended`; `any` is allowed
--   **TypeScript**: Selective strictness (`noImplicitAny`, `strictFunctionTypes`, `noImplicitReturns`) — not full `strict: true`
+-   **TypeScript**: Full `strict: true` with `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, ESNext module/target
 -   Name collisions resolved by appending incrementing numbers (e.g., `Item`, `Item1`)
 -   Reserve-word avoidance via `src/utils/javascript.ts` keyword list
 
