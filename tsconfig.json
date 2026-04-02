@@ -5,7 +5,7 @@
         "declaration": true,
         "declarationMap": true,
         "lib": ["ESNext"],
-        "module": "Preserve",
+        "module": "esnext",
         "moduleDetection": "force",
         "moduleResolution": "bundler",
         "noFallthroughCasesInSwitch": true,
@@ -20,6 +20,7 @@
         "sourceMap": true,
         "strict": true,
         "target": "ESNext",
+        "types": ["node", "supports-color", "tape", "yargs"],
         "verbatimModuleSyntax": true
     },
     "include": ["src"]
