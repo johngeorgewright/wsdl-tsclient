@@ -10,7 +10,7 @@ Generate a [soap client](https://www.npmjs.com/package/soap) with typescript def
 
 This library uses [ts-morph](https://www.npmjs.com/package/ts-morph) to generate typescript code and [soap](https://github.com/vpulim/node-soap) for runtime. Inspired by Java [wsimport](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/wsimport.html) and [openapi-generator](https://github.com/OpenAPITools/openapi-generator).
 
-*NOTE:* Add [soap](https://www.npmjs.com/package/soap) to your npm runtime dependencies (`npm i soap`).
+_NOTE:_ Add [soap](https://www.npmjs.com/package/soap) to your npm runtime dependencies (`npm i soap`).
 
 ## Install
 
@@ -91,7 +91,7 @@ parseAndGenerate("./path/to/MyWsdl.wsdl", "./generated/");
 
 ### Using generated client in your project
 
-*Note:* Make sure you have [soap](https://www.npmjs.com/package/soap) package in your runtime dependencies (`npm i soap`)
+_Note:_ Make sure you have [soap](https://www.npmjs.com/package/soap) package in your runtime dependencies (`npm i soap`)
 
 ```typescript
 import { createClientAsync } from "./generated/MyWsdl";
@@ -100,7 +100,7 @@ const client = await createClientAsync("./path/to/wsdl.wsdl");
 client.CallSoapMethodAsync();
 ```
 
-Setting basic auth 
+Setting basic auth
 
 ```typescript
 import soap from "soap";
@@ -122,9 +122,9 @@ for more information about the use of the client, read more about [soap](https:/
 
 ## Develpoment
 
-- Clone the repository
-- Install dependencies `npm i`
-- Run tests `npm test`
+-   Clone the repository
+-   Install dependencies `npm i`
+-   Run tests `npm test`
 
 ## License
 
