@@ -122,7 +122,7 @@ for more information about the use of the client, read more about [soap](https:/
 
 ![overview](./docs/Overview.png)
 
-## Develpoment
+## Development
 
 -   Clone the repository
 -   Install dependencies `npm i`
