@@ -380,7 +380,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                 const inputMessage = method.input.$name
                                     ? wsdl.definitions.messages[method.input.$name]
                                     : undefined;
-                                if (inputMessage?.element.$type || inputMessage?.element.$name) {
+                                if (inputMessage?.element?.$type || inputMessage?.element?.$name) {
                                     // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
                                     const typeName = (inputMessage.element.$type ??
                                         inputMessage.element.$name) as string;
@@ -430,7 +430,7 @@ export async function parseWsdl(wsdlPath: string, options: Partial<ParserOptions
                                 const outputMessage =
                                     (!!method.output.$name && wsdl.definitions.messages[method.output.$name]) ||
                                     undefined;
-                                if (outputMessage?.element.$type || outputMessage?.element.$name) {
+                                if (outputMessage?.element?.$type || outputMessage?.element?.$name) {
                                     // TODO: if `$type` not defined, inline type into function declartion (do not create definition file) - wsimport
                                     const typeName = (outputMessage.element.$type ??
                                         outputMessage.element.$name) as string;

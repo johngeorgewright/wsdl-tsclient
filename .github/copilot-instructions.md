@@ -22,14 +22,13 @@ Key design: `DefinitionProperty` is either `PRIMITIVE` (maps to TS string/number
 
 ```bash
 npm run build          # Compile to ./dist (CommonJS, ES5 target)
-npm test               # Run all test suites (pretest cleans generated/)
-npm run test:node-soap # Run primary test suite only
+npm test               # Run all test suites via vitest (pretest cleans generated/)
 npm run lint           # ESLint on ./src
 npm run lint:fix       # Auto-fix lint issues
-npm run dev            # ts-node development mode
+npm run dev            # vite-node development mode
 ```
 
-Tests use **tape** with **tap-spec** reporter. Pattern: generate from WSDL → assert files exist → typecheck generated output via `tsc`.
+Tests use **vitest**. Pattern: generate from WSDL → assert files exist → typecheck generated output via `tsc`.
 
 ## Code Style
 

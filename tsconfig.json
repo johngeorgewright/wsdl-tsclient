@@ -20,7 +20,7 @@
         "sourceMap": true,
         "strict": true,
         "target": "ESNext",
-        "types": ["node", "supports-color", "tape", "yargs"],
+        "types": ["node", "supports-color", "yargs"],
         "verbatimModuleSyntax": true
     },
     "include": ["src"]
