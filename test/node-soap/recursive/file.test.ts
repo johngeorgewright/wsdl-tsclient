@@ -17,16 +17,10 @@ describe(target, () => {
     });
 
     it(`${target} - check definitions`, async () => {
-        expect(existsSync(`${outdir}/foo/definitions/BankSvcRq.ts`)).toBe(true);
-        expect(existsSync(`${outdir}/foo/definitions/BankSvcRs.ts`)).toBe(true);
-        expect(existsSync(`${outdir}/foo/definitions/FooRq.ts`)).toBe(true);
-        expect(existsSync(`${outdir}/foo/definitions/FooRs.ts`)).toBe(true);
-        expect(existsSync(`${outdir}/foo/definitions/PaymentRq.ts`)).toBe(true);
-        expect(existsSync(`${outdir}/foo/definitions/PaymentRs.ts`)).toBe(true);
+        expect(existsSync(`${outdir}/file/definitions/DummyResponse.ts`)).toBe(true);
     });
 
     it(`${target} - compile`, async () => {
         await typecheck(`${outdir}/file/index.ts`);
     });
-
 });
