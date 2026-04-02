@@ -16,13 +16,19 @@ export interface GeneratorOptions {
     emitDefinitionsOnly: boolean;
     modelPropertyNaming: ModelPropertyNaming | null;
     esm: boolean;
+    esmExtension: ".js" | ".ts";
 }
 
 const defaultOptions: GeneratorOptions = {
     emitDefinitionsOnly: false,
     modelPropertyNaming: null,
     esm: false,
+    esmExtension: ".js",
 };
+
+function esmSuffix(options: GeneratorOptions): string {
+    return options.esm ? options.esmExtension : "";
+}
 
 /**
  * To avoid duplicated imports
@@ -107,7 +113,7 @@ function generateDefinitionFile(
             }
             // If a property is of the same type as its parent type, don't add import
             if (prop.ref.name !== definition.name) {
-                addSafeImport(definitionImports, `./${prop.ref.name}${options.esm ? ".js" : ""}`, prop.ref.name);
+                addSafeImport(definitionImports, `./${prop.ref.name}${esmSuffix(options)}`, prop.ref.name);
             }
             definitionProperties.push(createProperty(prop.name, prop.ref.name, prop.sourceName, !!prop.isArray));
         }
@@ -179,13 +185,13 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
+                            `./definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
                             method.paramDefinition.name
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.paramDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
+                        `../definitions/${method.paramDefinition.name}${esmSuffix(mergedOptions)}`,
                         method.paramDefinition.name
                     );
                 }
@@ -202,13 +208,13 @@ export async function generate(
                         );
                         addSafeImport(
                             clientImports,
-                            `./definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
+                            `./definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
                             method.returnDefinition.name
                         );
                     }
                     addSafeImport(
                         portImports,
-                        `../definitions/${method.returnDefinition.name}${mergedOptions.esm ? ".js" : ""}`,
+                        `../definitions/${method.returnDefinition.name}${esmSuffix(mergedOptions)}`,
                         method.returnDefinition.name
                     );
                 }
@@ -232,7 +238,7 @@ export async function generate(
                 });
             } // End of PortMethod
             if (!mergedOptions.emitDefinitionsOnly) {
-                addSafeImport(serviceImports, `../ports/${port.name}${mergedOptions.esm ? ".js" : ""}`, port.name);
+                addSafeImport(serviceImports, `../ports/${port.name}${esmSuffix(mergedOptions)}`, port.name);
                 servicePorts.push({
                     name: sanitizePropName(port.name),
                     isReadonly: true,
@@ -254,7 +260,7 @@ export async function generate(
         } // End of Port
 
         if (!mergedOptions.emitDefinitionsOnly) {
-            addSafeImport(clientImports, `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`, service.name);
+            addSafeImport(clientImports, `./services/${service.name}${esmSuffix(mergedOptions)}`, service.name);
             clientServices.push({ name: sanitizePropName(service.name), type: service.name });
 
             serviceFile.addImportDeclarations(serviceImports);
@@ -341,7 +347,7 @@ export async function generate(
     indexFile.addExportDeclarations(
         allDefinitions.map((def) => ({
             namedExports: [def.name],
-            moduleSpecifier: `./definitions/${def.name}${mergedOptions.esm ? ".js" : ""}`,
+            moduleSpecifier: `./definitions/${def.name}${esmSuffix(mergedOptions)}`,
         }))
     );
     if (!mergedOptions.emitDefinitionsOnly) {
@@ -350,19 +356,19 @@ export async function generate(
         indexFile.addExportDeclarations([
             {
                 namedExports: ["createClientAsync", `${parsedWsdl.name}Client`],
-                moduleSpecifier: `./client${mergedOptions.esm ? ".js" : ""}`,
+                moduleSpecifier: `./client${esmSuffix(mergedOptions)}`,
             },
         ]);
         indexFile.addExportDeclarations(
             parsedWsdl.services.map((service) => ({
                 namedExports: [service.name],
-                moduleSpecifier: `./services/${service.name}${mergedOptions.esm ? ".js" : ""}`,
+                moduleSpecifier: `./services/${service.name}${esmSuffix(mergedOptions)}`,
             }))
         );
         indexFile.addExportDeclarations(
             parsedWsdl.ports.map((port) => ({
                 namedExports: [port.name],
-                moduleSpecifier: `./ports/${port.name}${mergedOptions.esm ? ".js" : ""}`,
+                moduleSpecifier: `./ports/${port.name}${esmSuffix(mergedOptions)}`,
             }))
         );
     }

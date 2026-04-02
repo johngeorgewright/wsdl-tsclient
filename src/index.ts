@@ -51,6 +51,11 @@ export interface Options {
      */
     esm: boolean;
     /**
+     * Extension to use for ESM imports ('.js' or '.ts')
+     * @default ".js"
+     */
+    esmExtension: ".js" | ".ts";
+    /**
      * Print verbose logs
      * @default false
      */
@@ -76,6 +81,7 @@ export const defaultOptions: Options = {
     maxRecursiveDefinitionName: 64,
     modelPropertyNaming: null,
     esm: false,
+    esmExtension: ".js",
     //
     verbose: false,
     quiet: false,

@@ -52,6 +52,10 @@ const conf = yargs(process.argv.slice(2))
         type: "boolean",
         description: "Generate imports with .js suffix",
     })
+    .option("esmExtension", {
+        type: "string",
+        description: "Extension to use for ESM imports ('.js' or '.ts')",
+    })
     .option("quiet", {
         type: "boolean",
         description: "Suppress all logs",
@@ -134,6 +138,14 @@ if (conf.useWsdlTypeNames) {
 
 if (conf.esm) {
     options.esm = conf.esm;
+}
+
+if (conf.esmExtension) {
+    if (!".js|.ts".split("|").includes(conf.esmExtension)) {
+        console.error("Incorrect esmExtension value. Use '.js' or '.ts'");
+        process.exit(1);
+    }
+    options.esmExtension = conf.esmExtension as ".js" | ".ts";
 }
 
 Logger.debug("Options");

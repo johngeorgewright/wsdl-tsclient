@@ -70,6 +70,8 @@ Options:
                                     name but increased suffix. Will throw an
                                     error if exceeded.                  [number]
       --esm                         Generate imports with .js suffix   [boolean]
+      --esmExtension                Extension to use for ESM imports ('.js' or
+                                    '.ts')                              [string]
       --quiet                       Suppress all logs                  [boolean]
       --verbose                     Print verbose logs                 [boolean]
       --no-color                    Logs without colors                [boolean]
